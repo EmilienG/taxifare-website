@@ -21,6 +21,9 @@ install_requirements:
 # ----------------------------------
 
 streamlit:
+	-@streamlit run app.py --server.headless true
+
+streamlit_open:
 	-@streamlit run app.py
 
 

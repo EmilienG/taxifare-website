@@ -1,4 +1,5 @@
 .env
+*:Zone.Identifier
 
 # OS generated files #
 ######################
