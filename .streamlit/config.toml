@@ -1,9 +1,9 @@
 [theme]
 base = "dark"
-primaryColor = "#d4b06a"
-backgroundColor = "#0a0f1c"
-secondaryBackgroundColor = "#151b2e"
-textColor = "#f4efe4"
-borderColor = "#3d3a2e"
+primaryColor = "#ff2d95"
+backgroundColor = "#07010f"
+secondaryBackgroundColor = "#14061c"
+textColor = "#f7eaf4"
+borderColor = "#4a1840"
 showWidgetBorder = true
 baseRadius = "0.75rem"

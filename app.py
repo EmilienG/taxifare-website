@@ -131,7 +131,7 @@ SEARCHBOX_STYLE_DARK = _searchbox_theme_style(
     "#0a0e14", "#f5f7fa", "#8d96a5", "rgba(255,255,255,0.09)", "#f7c948"
 )
 SEARCHBOX_STYLE_PRO = _searchbox_theme_style(
-    "#151b2e", "#f4efe4", "#9aa3b5", "rgba(212,176,106,0.28)", "#d4b06a"
+    "#14061c", "#f7eaf4", "#a48aa8", "rgba(255,45,149,0.38)", "#ff2d95"
 )
 
 NYC_PRESETS = {
@@ -304,7 +304,7 @@ DEMO_IMAGES = [
 THEMES = ("pro", "dark", "light")
 DEFAULT_THEME = "pro"
 THEME_LABELS = {
-    "pro": "✨ Pro",
+    "pro": "🌃 Nightcall",
     "dark": "🌙 Nuit",
     "light": "☀️ Jour",
 }
@@ -314,7 +314,7 @@ THEME_MAP_TILES = {
     "light": "CartoDB positron",
 }
 THEME_ROUTE_COLOR = {
-    "pro": "#d4b06a",
+    "pro": "#ff2d95",
     "dark": "#f7c948",
     "light": "#c49212",
 }
@@ -347,49 +347,248 @@ init_theme()
 # ============================================================
 
 PRO_THEME_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap');
+
 :root {
     color-scheme: dark;
-    --bg: #0a0f1c;
-    --bg-spot-1: rgba(212,176,106,0.16);
-    --bg-spot-2: rgba(78,205,196,0.10);
-    --bg-spot-3: rgba(124,108,232,0.10);
-    --border: rgba(212,176,106,0.16);
-    --text: #f4efe4;
-    --muted: #9aa3b5;
-    --yellow: #d4b06a;
-    --green: #4ecdc4;
-    --red: #e07a7a;
-    --ink: #0a0f1c;
-    --label: #c9d0de;
-    --status-fg: #c9d0de;
-    --status-bg: rgba(255,255,255,0.045);
-    --dim: #7d8699;
-    --input-bg: #151b2e;
-    --input-fg: #f4efe4;
-    --input-border: rgba(212,176,106,0.38);
-    --input-ring: 0 0 0 1px rgba(212,176,106,0.08);
-    --card-a: rgba(255,255,255,0.06);
-    --card-b: rgba(16,22,40,0.72);
-    --card-shadow: 0 22px 50px rgba(4,8,20,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-    --price-glow: rgba(212,176,106,0.28);
-    --price-fill: rgba(212,176,106,0.06);
-    --price-border: rgba(212,176,106,0.28);
-    --metric-bg: rgba(255,255,255,0.045);
-    --metric-border: rgba(212,176,106,0.14);
-    --btn-secondary-bg: rgba(255,255,255,0.05);
-    --btn-secondary-border: rgba(212,176,106,0.22);
-    --btn-secondary-hover: rgba(212,176,106,0.14);
-    --scene-btn-bg: rgba(10, 15, 28, 0.92);
-    --scene-btn-fg: #f4efe4;
-    --scene-btn-border: rgba(212,176,106,0.18);
-    --scene-card-border: rgba(212,176,106,0.18);
-    --scene-card-bg: rgba(255,255,255,0.04);
-    --footer: #6b7386;
+    --bg: #07010f;
+    --bg-spot-1: rgba(255,45,149,0.22);
+    --bg-spot-2: rgba(45,226,230,0.12);
+    --bg-spot-3: rgba(255,20,80,0.16);
+    --border: rgba(255,45,149,0.28);
+    --text: #f7eaf4;
+    --muted: #a48aa8;
+    --yellow: #ff2d95;
+    --green: #2de2e6;
+    --red: #ff3b5c;
+    --ink: #07010f;
+    --label: #d9c0d4;
+    --status-fg: #e8c6dc;
+    --status-bg: rgba(255,45,149,0.08);
+    --dim: #8a6e86;
+    --input-bg: #14061c;
+    --input-fg: #f7eaf4;
+    --input-border: rgba(255,45,149,0.45);
+    --input-ring: 0 0 0 1px rgba(45,226,230,0.12), 0 0 18px rgba(255,45,149,0.12);
+    --card-a: rgba(255,45,149,0.08);
+    --card-b: rgba(12,2,22,0.82);
+    --card-shadow: 0 22px 50px rgba(4,0,12,0.55), 0 0 40px rgba(255,45,149,0.08), inset 0 1px 0 rgba(255,45,149,0.14);
+    --price-glow: rgba(255,45,149,0.42);
+    --price-fill: rgba(255,45,149,0.07);
+    --price-border: rgba(255,45,149,0.45);
+    --metric-bg: rgba(45,226,230,0.05);
+    --metric-border: rgba(255,45,149,0.18);
+    --btn-secondary-bg: rgba(255,45,149,0.07);
+    --btn-secondary-border: rgba(255,45,149,0.32);
+    --btn-secondary-hover: rgba(255,45,149,0.16);
+    --scene-btn-bg: rgba(7, 1, 15, 0.94);
+    --scene-btn-fg: #f7eaf4;
+    --scene-btn-border: rgba(255,45,149,0.28);
+    --scene-card-border: rgba(255,45,149,0.28);
+    --scene-card-bg: rgba(255,45,149,0.06);
+    --footer: #7a5f76;
     --scheme: dark;
-    --btn-grad-a: #d4b06a;
-    --btn-grad-b: #f0d7a2;
-    --btn-shadow: rgba(212,176,106,0.22);
-    --glow: rgba(212,176,106,0.45);
+    --btn-grad-a: #ff2d95;
+    --btn-grad-b: #ff6eb5;
+    --btn-shadow: rgba(255,45,149,0.38);
+    --glow: rgba(255,45,149,0.62);
+    --green-glow: rgba(45,226,230,0.42);
+    --red-glow: rgba(255,59,92,0.45);
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+}
+
+html, body, [class*="css"] { font-family: var(--font-body) !important; }
+
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"] {
+    background:
+        radial-gradient(ellipse 90% 42% at 50% 118%, rgba(255,45,149,0.28), transparent 58%),
+        radial-gradient(ellipse 50% 28% at 50% 108%, rgba(255,90,40,0.18), transparent 50%),
+        radial-gradient(circle at 10% 6%, rgba(255,45,149,0.22), transparent 30%),
+        radial-gradient(circle at 92% 8%, rgba(45,226,230,0.14), transparent 28%),
+        radial-gradient(circle at 78% 88%, rgba(90,20,140,0.35), transparent 40%),
+        #07010f !important;
+}
+
+.brand-name {
+    font-family: var(--font-display) !important;
+    font-style: italic;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    text-shadow:
+        -2px 0 rgba(45,226,230,0.85),
+        2px 0 rgba(255,45,149,0.9),
+        0 0 18px rgba(255,45,149,0.55);
+}
+
+.logo {
+    background: linear-gradient(135deg, #ff2d95 0%, #7b2dff 52%, #2de2e6 100%) !important;
+    color: #07010f !important;
+    box-shadow:
+        0 0 18px rgba(255,45,149,0.55),
+        0 0 36px rgba(45,226,230,0.22) !important;
+}
+
+.price {
+    font-family: var(--font-display) !important;
+    font-style: italic;
+    letter-spacing: 1px;
+    animation: nightcall-neon 2.8s ease-in-out infinite;
+}
+
+.price-label {
+    letter-spacing: 3.2px !important;
+    color: #2de2e6 !important;
+    text-shadow: 0 0 10px rgba(45,226,230,0.45);
+}
+
+.price-card {
+    box-shadow:
+        0 0 28px rgba(255,45,149,0.18),
+        inset 0 0 40px rgba(255,45,149,0.06);
+}
+
+div[data-testid="stHorizontalBlock"]:has(.main-panel) > div {
+    box-shadow:
+        0 22px 50px rgba(4,0,12,0.55),
+        0 0 32px rgba(255,45,149,0.12),
+        inset 0 1px 0 rgba(255,45,149,0.18);
+}
+
+.stButton > button {
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    box-shadow:
+        0 8px 22px rgba(255,45,149,0.32),
+        0 0 18px rgba(255,45,149,0.28) !important;
+}
+.stButton > button:hover {
+    box-shadow:
+        0 12px 36px rgba(255,45,149,0.48),
+        0 0 28px rgba(45,226,230,0.28) !important;
+}
+
+.scene-card img {
+    filter: saturate(1.25) contrast(1.18) brightness(0.82) hue-rotate(-18deg);
+}
+.scene-card:hover img {
+    filter: saturate(1.4) contrast(1.22) brightness(0.95) hue-rotate(-8deg);
+}
+.scene-card:hover {
+    box-shadow: 0 0 22px rgba(255,45,149,0.45);
+    border-color: #ff2d95;
+}
+
+.kicker {
+    letter-spacing: 2.4px !important;
+}
+
+.nightcall-fx {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    overflow: hidden;
+}
+.nightcall-fx::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 2px,
+        rgba(255,45,149,0.035) 2px,
+        rgba(255,45,149,0.035) 4px
+    );
+    mix-blend-mode: overlay;
+    animation: crt-flicker 4.5s ease-in-out infinite;
+}
+.nightcall-fx::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.11;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+}
+.nightcall-grid {
+    position: fixed;
+    left: -10%;
+    right: -10%;
+    bottom: -18%;
+    height: 42vh;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            transparent 0,
+            transparent 39px,
+            rgba(255,45,149,0.22) 40px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent 0,
+            transparent 39px,
+            rgba(45,226,230,0.12) 40px
+        );
+    background-size: 40px 100%, 100% 40px;
+    transform: perspective(380px) rotateX(64deg);
+    transform-origin: center bottom;
+    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent 88%);
+    mask-image: linear-gradient(to top, rgba(0,0,0,0.7), transparent 88%);
+    opacity: 0.55;
+    animation: grid-drift 18s linear infinite;
+}
+
+[data-testid="stMainBlockContainer"] {
+    position: relative;
+    z-index: 1;
+}
+
+.brand-tag {
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    font-size: 11px !important;
+    color: #2de2e6 !important;
+    text-shadow: 0 0 10px rgba(45,226,230,0.35);
+}
+
+@keyframes nightcall-neon {
+    0%, 100% {
+        text-shadow:
+            -2px 0 rgba(45,226,230,0.8),
+            2px 0 rgba(255,45,149,0.9),
+            0 0 12px rgba(255,45,149,0.7),
+            0 0 28px rgba(255,45,149,0.4);
+    }
+    50% {
+        text-shadow:
+            -3px 0 rgba(45,226,230,1),
+            3px 0 rgba(255,45,149,1),
+            0 0 18px rgba(255,45,149,0.95),
+            0 0 42px rgba(255,45,149,0.55),
+            0 0 64px rgba(45,226,230,0.28);
+    }
+}
+@keyframes crt-flicker {
+    0%, 100% { opacity: 0.85; }
+    47% { opacity: 0.92; }
+    48% { opacity: 0.55; }
+    50% { opacity: 0.95; }
+}
+@keyframes grid-drift {
+    from { background-position: 0 0, 0 0; }
+    to { background-position: 0 0, 0 40px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .price { animation: none; }
+    .nightcall-fx::before, .nightcall-grid { animation: none; }
 }
 """
 
@@ -437,6 +636,10 @@ DARK_THEME_CSS = """
     --btn-grad-b: #ffdc73;
     --btn-shadow: rgba(247,201,72,0.14);
     --glow: rgba(247,201,72,0.45);
+    --green-glow: rgba(71,230,161,0.28);
+    --red-glow: rgba(255,107,122,0.28);
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
 }
 """
 
@@ -484,6 +687,10 @@ LIGHT_THEME_CSS = """
     --btn-grad-b: #f0c44a;
     --btn-shadow: rgba(196,146,18,0.20);
     --glow: rgba(196,146,18,0.35);
+    --green-glow: rgba(12,143,97,0.22);
+    --red-glow: rgba(208,58,76,0.22);
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
 }
 """
 
@@ -495,46 +702,46 @@ THEME_CSS = {
 
 APP_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
     color-scheme: dark;
-    --bg: #0a0f1c;
-    --bg-spot-1: rgba(212,176,106,0.16);
-    --bg-spot-2: rgba(78,205,196,0.10);
-    --bg-spot-3: rgba(124,108,232,0.10);
-    --border: rgba(212,176,106,0.16);
-    --text: #f4efe4;
-    --muted: #9aa3b5;
-    --yellow: #d4b06a;
-    --green: #4ecdc4;
-    --red: #e07a7a;
-    --ink: #0a0f1c;
-    --label: #c9d0de;
-    --status-fg: #c9d0de;
-    --status-bg: rgba(255,255,255,0.045);
-    --dim: #7d8699;
-    --input-bg: #151b2e;
-    --input-fg: #f4efe4;
-    --input-border: rgba(212,176,106,0.38);
-    --input-ring: 0 0 0 1px rgba(212,176,106,0.08);
-    --card-a: rgba(255,255,255,0.06);
-    --card-b: rgba(16,22,40,0.72);
-    --card-shadow: 0 22px 50px rgba(4,8,20,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-    --price-glow: rgba(212,176,106,0.28);
-    --price-fill: rgba(212,176,106,0.06);
-    --price-border: rgba(212,176,106,0.28);
-    --metric-bg: rgba(255,255,255,0.045);
-    --metric-border: rgba(212,176,106,0.14);
-    --btn-secondary-bg: rgba(255,255,255,0.05);
-    --btn-secondary-border: rgba(212,176,106,0.22);
-    --btn-secondary-hover: rgba(212,176,106,0.14);
-    --scene-btn-bg: rgba(10, 15, 28, 0.92);
-    --scene-btn-fg: #f4efe4;
-    --scene-btn-border: rgba(212,176,106,0.18);
-    --scene-card-border: rgba(212,176,106,0.18);
-    --scene-card-bg: rgba(255,255,255,0.04);
-    --footer: #6b7386;
+    --bg: #07010f;
+    --bg-spot-1: rgba(255,45,149,0.22);
+    --bg-spot-2: rgba(45,226,230,0.12);
+    --bg-spot-3: rgba(255,20,80,0.16);
+    --border: rgba(255,45,149,0.28);
+    --text: #f7eaf4;
+    --muted: #a48aa8;
+    --yellow: #ff2d95;
+    --green: #2de2e6;
+    --red: #ff3b5c;
+    --ink: #07010f;
+    --label: #d9c0d4;
+    --status-fg: #e8c6dc;
+    --status-bg: rgba(255,45,149,0.08);
+    --dim: #8a6e86;
+    --input-bg: #14061c;
+    --input-fg: #f7eaf4;
+    --input-border: rgba(255,45,149,0.45);
+    --input-ring: 0 0 0 1px rgba(45,226,230,0.12), 0 0 18px rgba(255,45,149,0.12);
+    --card-a: rgba(255,45,149,0.08);
+    --card-b: rgba(12,2,22,0.82);
+    --card-shadow: 0 22px 50px rgba(4,0,12,0.55), 0 0 40px rgba(255,45,149,0.08), inset 0 1px 0 rgba(255,45,149,0.14);
+    --price-glow: rgba(255,45,149,0.42);
+    --price-fill: rgba(255,45,149,0.07);
+    --price-border: rgba(255,45,149,0.45);
+    --metric-bg: rgba(45,226,230,0.05);
+    --metric-border: rgba(255,45,149,0.18);
+    --btn-secondary-bg: rgba(255,45,149,0.07);
+    --btn-secondary-border: rgba(255,45,149,0.32);
+    --btn-secondary-hover: rgba(255,45,149,0.16);
+    --scene-btn-bg: rgba(7, 1, 15, 0.94);
+    --scene-btn-fg: #f7eaf4;
+    --scene-btn-border: rgba(255,45,149,0.28);
+    --scene-card-border: rgba(255,45,149,0.28);
+    --scene-card-bg: rgba(255,45,149,0.06);
+    --footer: #7a5f76;
     --space-1: 0.4rem;
     --space-2: 0.7rem;
     --space-3: 1rem;
@@ -544,13 +751,17 @@ APP_CSS = """
     --page-pad-x: 2rem;
     --page-pad-y: 1.2rem;
     --scheme: dark;
-    --btn-grad-a: #d4b06a;
-    --btn-grad-b: #f0d7a2;
-    --btn-shadow: rgba(212,176,106,0.22);
-    --glow: rgba(212,176,106,0.45);
+    --btn-grad-a: #ff2d95;
+    --btn-grad-b: #ff6eb5;
+    --btn-shadow: rgba(255,45,149,0.38);
+    --glow: rgba(255,45,149,0.62);
+    --green-glow: rgba(45,226,230,0.42);
+    --red-glow: rgba(255,59,92,0.45);
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
 }
 
-html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
+html, body, [class*="css"] { font-family: var(--font-body), 'DM Sans', sans-serif; }
 
 .stApp,
 [data-testid="stAppViewContainer"],
@@ -661,15 +872,15 @@ div[data-testid="stHorizontalBlock"]:has(.brand) [data-testid="stVerticalBlock"]
 .brand-left { display: flex; align-items: center; gap: 12px; }
 .logo {
     width: 42px; height: 42px; border-radius: 12px;
-    background: linear-gradient(135deg, #f7c948, #ffdf78);
+    background: linear-gradient(135deg, var(--btn-grad-a), var(--btn-grad-b));
     display: flex; align-items: center; justify-content: center;
-    color: #0a0b0e; font-size: 21px;
-    box-shadow: 0 8px 24px rgba(247,201,72,0.25);
+    color: var(--ink); font-size: 21px;
+    box-shadow: 0 8px 24px var(--btn-shadow);
     animation: glow-route 3.2s ease-in-out infinite;
     flex-shrink: 0;
 }
 .brand-name {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display);
     font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1;
 }
 .brand-tag { color: var(--muted); font-size: 12px; margin-top: 3px; }
@@ -681,7 +892,7 @@ div[data-testid="stHorizontalBlock"]:has(.brand) [data-testid="stVerticalBlock"]
     flex-wrap: wrap;
 }
 .section-title {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display);
     font-size: 15px; font-weight: 600;
 }
 .section-sub { color: var(--muted); font-size: 12px; line-height: 1.35; }
@@ -729,7 +940,7 @@ div[data-testid="stHorizontalBlock"]:has(.main-panel) > div {
     letter-spacing: 1.8px; font-weight: 700;
 }
 .price {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display);
     font-size: 52px; line-height: 1; letter-spacing: -2px;
     font-weight: 700; color: var(--yellow); margin-top: 12px;
 }
@@ -749,22 +960,22 @@ div[data-testid="stHorizontalBlock"]:has(.main-panel) > div {
     color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1.1px;
 }
 .metric-value {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display);
     font-size: 16px; font-weight: 600; margin-top: 5px;
 }
 
 .stButton > button {
     width: 100%; border: none; border-radius: 11px; min-height: 42px;
-    background: linear-gradient(135deg, #f7c948, #ffdc73);
-    color: #0a0b0e;
-    font-family: 'Space Grotesk', sans-serif;
+    background: linear-gradient(135deg, var(--btn-grad-a), var(--btn-grad-b));
+    color: var(--ink);
+    font-family: var(--font-display);
     font-weight: 700; font-size: 13px;
     transition: all 0.2s ease;
-    box-shadow: 0 8px 22px rgba(247,201,72,0.14);
+    box-shadow: 0 8px 22px var(--btn-shadow);
 }
 .stButton > button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 14px 36px rgba(247,201,72,0.26);
+    box-shadow: 0 14px 36px var(--glow);
 }
 .stButton > button[kind="secondary"],
 .stButton > button[data-testid="baseButton-secondary"] {
@@ -789,7 +1000,7 @@ div[data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) .stButton > button,
     color: var(--status-fg) !important;
     border: 1px solid var(--border) !important;
     box-shadow: none !important;
-    font-family: 'DM Sans', sans-serif;
+    font-family: var(--font-body);
     font-size: 12px;
     font-weight: 600;
 }
@@ -1001,7 +1212,7 @@ a.scene-card:visited {
     padding: 28px 10px 8px;
     background: linear-gradient(transparent 0%, rgba(0,0,0,0.58) 40%, rgba(0,0,0,0.92) 100%);
     color: #fff;
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display);
     font-size: 13px;
     font-weight: 700;
     letter-spacing: -0.15px;
@@ -1028,7 +1239,7 @@ a.scene-card:visited {
 }
 .scene-card.pickup {
     border-color: var(--green);
-    box-shadow: 0 0 16px rgba(71,230,161,0.28);
+    box-shadow: 0 0 16px var(--green-glow);
 }
 .scene-card.pickup .scene-badge {
     background: var(--green);
@@ -1036,7 +1247,7 @@ a.scene-card:visited {
 }
 .scene-card.dropoff {
     border-color: var(--red);
-    box-shadow: 0 0 16px rgba(255,107,122,0.28);
+    box-shadow: 0 0 16px var(--red-glow);
 }
 .scene-card.dropoff .scene-badge {
     background: var(--red);
@@ -1636,7 +1847,7 @@ def render_clickable_route_map(
 
     theme_key = st.session_state.get("theme", DEFAULT_THEME)
     tiles = THEME_MAP_TILES.get(theme_key, "CartoDB dark_matter")
-    route_color = THEME_ROUTE_COLOR.get(theme_key, "#d4b06a")
+    route_color = THEME_ROUTE_COLOR.get(theme_key, "#ff2d95")
     # Keep the base map script stable so dragging does not remount / reset the view.
     route_map = folium.Map(
         location=[NYC_CENTER_LAT, NYC_CENTER_LON],
@@ -1647,12 +1858,26 @@ def render_clickable_route_map(
     points = folium.FeatureGroup(name="points")
     _draggable_marker(pickup_lat, pickup_lon, "Départ", "green").add_to(points)
     _draggable_marker(dropoff_lat, dropoff_lon, "Arrivée", "red").add_to(points)
-    folium.PolyLine(
-        [[pickup_lat, pickup_lon], [dropoff_lat, dropoff_lon]],
-        color=route_color,
-        weight=4,
-        opacity=0.85,
-    ).add_to(points)
+    if theme_key == "pro":
+        folium.PolyLine(
+            [[pickup_lat, pickup_lon], [dropoff_lat, dropoff_lon]],
+            color="#2de2e6",
+            weight=10,
+            opacity=0.22,
+        ).add_to(points)
+        folium.PolyLine(
+            [[pickup_lat, pickup_lon], [dropoff_lat, dropoff_lon]],
+            color=route_color,
+            weight=4,
+            opacity=0.95,
+        ).add_to(points)
+    else:
+        folium.PolyLine(
+            [[pickup_lat, pickup_lon], [dropoff_lat, dropoff_lon]],
+            color=route_color,
+            weight=4,
+            opacity=0.85,
+        ).add_to(points)
 
     map_data = st_folium(
         route_map,
@@ -1881,14 +2106,19 @@ current_theme = st.session_state.get("theme", DEFAULT_THEME)
 
 head_left, head_right = st.columns([4, 1], gap="small", vertical_alignment="center")
 with head_left:
+    brand_tag = (
+        "Night drive · NYC"
+        if current_theme == "pro"
+        else "Fare Intelligence · optional API"
+    )
     st.markdown(
-        """
+        f"""
 <div class="brand">
   <div class="brand-left">
     <div class="logo">🚕</div>
     <div>
       <div class="brand-name">TaxiFare</div>
-      <div class="brand-tag">Fare Intelligence · optional API</div>
+      <div class="brand-tag">{brand_tag}</div>
     </div>
   </div>
 </div>
@@ -1898,16 +2128,24 @@ with head_left:
 with head_right:
     st.markdown('<div class="theme-toggle-anchor"></div>', unsafe_allow_html=True)
     st.button(
-        THEME_LABELS.get(current_theme, "✨ Pro"),
+        THEME_LABELS.get(current_theme, "🌃 Nightcall"),
         key="theme_toggle",
         type="secondary",
         on_click=cycle_theme,
-        help="Pro → Nuit → Jour",
+        help="Nightcall → Nuit → Jour",
         use_container_width=True,
     )
 
+nightcall_fx = (
+    '<div class="nightcall-fx" aria-hidden="true"></div>'
+    '<div class="nightcall-grid" aria-hidden="true"></div>'
+    if current_theme == "pro"
+    else ""
+)
 st.markdown(
-    APP_CSS + f"<style>{THEME_CSS.get(current_theme, PRO_THEME_CSS)}</style>",
+    APP_CSS
+    + f"<style>{THEME_CSS.get(current_theme, PRO_THEME_CSS)}</style>"
+    + nightcall_fx,
     unsafe_allow_html=True,
 )
 
@@ -2004,7 +2242,7 @@ with right:
 st.markdown(
     f"""
 <div class="footer">
-  TaxiFare <span>●</span> optional FastAPI
+  TaxiFare <span>●</span> {"Nightcall" if current_theme == "pro" else "optional FastAPI"}
   &nbsp;·&nbsp; Built with Streamlit
 </div>
 """,
