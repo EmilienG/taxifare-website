@@ -179,18 +179,25 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 
 .block-container {
-    max-width: 1280px;
-    padding-top: 0.7rem;
-    padding-bottom: 0.8rem;
+    max-width: 1320px;
+    padding-top: 1.35rem !important;
+    padding-bottom: 1.6rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
 }
 
 #MainMenu, footer, header, [data-testid="stHeader"] { display: none !important; }
 
-[data-testid="stVerticalBlock"] { gap: 0.45rem !important; }
-[data-testid="stWidgetLabel"] { margin-bottom: 0.1rem; }
-[data-testid="stWidgetLabel"] p { font-size: 12px !important; font-weight: 600; }
+[data-testid="stVerticalBlock"] { gap: 0.7rem !important; }
+[data-testid="stWidgetLabel"] { margin-bottom: 0.2rem; }
+[data-testid="stWidgetLabel"] p {
+    font-size: 12px !important;
+    font-weight: 600;
+    color: #b7c0cc !important;
+}
 [data-testid="InputInstructions"] { display: none !important; }
-[data-testid="stCaptionContainer"] { margin-top: 0.15rem !important; }
+[data-testid="stCaptionContainer"] { margin-top: 0.2rem !important; }
+[data-testid="stCaptionContainer"] p { font-size: 12px !important; color: var(--muted) !important; }
 
 @keyframes pulse-dot {
     0%, 100% { box-shadow: 0 0 0 0 rgba(71,230,161,0.7); }
@@ -207,33 +214,38 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
 .brand {
     display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 0.55rem;
+    gap: 16px;
+    margin: 0 0 1.15rem;
+    padding: 0 2px 1rem;
+    border-bottom: 1px solid var(--border);
 }
-.brand-left { display: flex; align-items: center; gap: 12px; }
+.brand-left { display: flex; align-items: center; gap: 14px; }
 .logo {
-    width: 36px; height: 36px; border-radius: 11px;
+    width: 44px; height: 44px; border-radius: 13px;
     background: linear-gradient(135deg, #f7c948, #ffdf78);
     display: flex; align-items: center; justify-content: center;
-    color: #0a0b0e; font-size: 18px;
+    color: #0a0b0e; font-size: 22px;
     box-shadow: 0 8px 24px rgba(247,201,72,0.25);
     animation: glow-route 3.2s ease-in-out infinite;
+    flex-shrink: 0;
 }
 .brand-name {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 18px; font-weight: 700; letter-spacing: -0.4px;
+    font-size: 22px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1;
 }
-.brand-tag { color: var(--muted); font-size: 11px; }
+.brand-tag { color: var(--muted); font-size: 12px; margin-top: 3px; }
 
 .status {
     display: flex; align-items: center; gap: 8px;
-    color: #aab3c0; font-size: 11px;
+    color: #aab3c0; font-size: 12px;
     background: rgba(255,255,255,0.035);
     border: 1px solid var(--border);
-    padding: 6px 11px; border-radius: 999px;
+    padding: 8px 13px; border-radius: 999px;
+    white-space: nowrap;
 }
 .status.offline { color: #c9a0a5; }
 .status-dot {
-    width: 7px; height: 7px; border-radius: 50%;
+    width: 8px; height: 8px; border-radius: 50%;
     background: var(--green);
     animation: pulse-dot 1.8s ease-in-out infinite;
 }
@@ -243,59 +255,79 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     box-shadow: none;
 }
 
-.panel {
+.section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px;
+    margin: 0.15rem 2px 0.15rem;
+}
+.section-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px; font-weight: 600;
+}
+.section-sub { color: var(--muted); font-size: 12px; }
+.landmarks-head { margin-top: 0.35rem; }
+.kicker {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0.55rem 0 0.05rem;
+}
+.kicker:first-child { margin-top: 0; }
+.kicker-green { color: var(--green); }
+.kicker-red { color: var(--red); }
+
+div[data-testid="stColumn"]:has(.section-head),
+div[data-testid="column"]:has(.section-head) {
     background: linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
     border: 1px solid var(--border);
     border-radius: 22px;
-    padding: 22px 24px 8px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
-    margin-bottom: 1rem;
+    padding: 1.15rem 1.2rem 1.05rem !important;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
 }
-.panel-title {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 17px; font-weight: 600; margin-bottom: 2px;
-}
-.panel-sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
 
 .price-card {
-    margin-top: 0; padding: 20px 18px 16px; border-radius: 18px;
+    margin-top: 0.35rem;
+    padding: 18px 10px 12px;
+    border-radius: 16px;
     text-align: center;
     background:
-        radial-gradient(circle at 80% 10%, rgba(247,201,72,0.14), transparent 42%),
+        radial-gradient(circle at 80% 10%, rgba(247,201,72,0.16), transparent 42%),
         rgba(247,201,72,0.04);
-    border: 1px solid rgba(247,201,72,0.18);
+    border: 1px solid rgba(247,201,72,0.16);
     animation: fare-in 0.55s cubic-bezier(.2,.8,.2,1);
 }
 .price-label {
-    color: var(--muted); font-size: 13px; text-transform: uppercase;
+    color: var(--muted); font-size: 12px; text-transform: uppercase;
     letter-spacing: 1.8px; font-weight: 700;
 }
 .price {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 56px; line-height: 1; letter-spacing: -2px;
-    font-weight: 700; color: var(--yellow); margin-top: 10px;
+    font-size: 52px; line-height: 1; letter-spacing: -2px;
+    font-weight: 700; color: var(--yellow); margin-top: 12px;
 }
-.price-note { color: #707987; font-size: 13px; margin-top: 8px; }
+.price-note { color: #707987; font-size: 12px; margin-top: 10px; line-height: 1.4; }
 
 .metric-row {
-    display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 16px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 18px;
 }
 .metric {
-    background: rgba(255,255,255,0.025);
+    background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px; padding: 12px 10px;
+    border-radius: 12px; padding: 12px 6px 11px;
     text-align: center;
 }
 .metric-label {
-    color: #707987; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: #707987; font-size: 10px; text-transform: uppercase; letter-spacing: 1.1px;
 }
 .metric-value {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 22px; font-weight: 600; margin-top: 4px;
+    font-size: 16px; font-weight: 600; margin-top: 5px;
 }
 
 .stButton > button {
-    width: 100%; border: none; border-radius: 10px; min-height: 38px;
+    width: 100%; border: none; border-radius: 11px; min-height: 40px;
     background: linear-gradient(135deg, #f7c948, #ffdc73);
     color: #0a0b0e;
     font-family: 'Space Grotesk', sans-serif;
@@ -304,8 +336,8 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     box-shadow: 0 8px 22px rgba(247,201,72,0.14);
 }
 .stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 45px rgba(247,201,72,0.28);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px rgba(247,201,72,0.26);
 }
 .stButton > button[kind="secondary"],
 .stButton > button[data-testid="baseButton-secondary"] {
@@ -326,50 +358,87 @@ div[data-baseweb="base-input"] {
     background: #0a0e14 !important;
     border: 1px solid rgba(255,255,255,0.09) !important;
     border-radius: 12px !important;
+    min-height: 40px;
 }
 input { color: white !important; }
 
 div[data-testid="stHorizontalBlock"]:has(.scene-card) {
-    gap: 0.55rem !important;
+    gap: 0.7rem !important;
 }
 div[data-testid="stHorizontalBlock"]:has(.scene-card) [data-testid="stVerticalBlock"] {
-    gap: 0.28rem !important;
+    gap: 0 !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.scene-card) .stButton {
+    margin-top: 0;
 }
 div[data-testid="stHorizontalBlock"]:has(.scene-card) .stButton > button {
-    min-height: 30px;
-    font-size: 12px;
-    border-radius: 8px;
+    min-height: 32px;
+    font-size: 11px;
+    border-radius: 0 0 12px 12px;
     box-shadow: none;
+    background: rgba(8, 10, 14, 0.92);
+    color: #e8edf4;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-top: none;
+}
+div[data-testid="stHorizontalBlock"]:has(.scene-card) .stButton > button:hover {
+    transform: none;
+    background: rgba(247,201,72,0.16);
+    color: var(--yellow);
 }
 
 .scene-card {
-    border-radius: 12px;
+    position: relative;
+    border-radius: 12px 12px 0 0;
     overflow: hidden;
     line-height: 0;
-    border: 3px solid transparent;
+    border: 2px solid rgba(255,255,255,0.08);
+    border-bottom: none;
     background: rgba(255,255,255,0.03);
 }
 .scene-card img {
     width: 100%;
-    height: 56px;
+    height: 78px;
     object-fit: cover;
     display: block;
+    filter: saturate(1.05) contrast(1.04);
+}
+.scene-caption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 22px 8px 7px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.78));
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
 }
 .scene-card.pickup {
     border-color: var(--green);
-    box-shadow: 0 0 12px rgba(71,230,161,0.35);
+    box-shadow: 0 0 16px rgba(71,230,161,0.28);
 }
 .scene-card.dropoff {
     border-color: var(--red);
-    box-shadow: 0 0 12px rgba(255,107,122,0.35);
+    box-shadow: 0 0 16px rgba(255,107,122,0.28);
 }
 
 .footer {
-    text-align: center; margin-top: 10px; color: #4f5866; font-size: 10px;
+    text-align: center;
+    margin-top: 1.15rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    color: #4f5866;
+    font-size: 11px;
 }
 .footer span { color: var(--yellow); }
 
-iframe { border-radius: 14px; }
+iframe { border-radius: 16px; }
+
+@media (max-width: 1100px) {
+    .metric-row { grid-template-columns: 1fr; }
+    .price { font-size: 44px; }
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -503,7 +572,17 @@ def render_clickable_route_map(
 
     target = st.session_state.map_click_target
 
-    b1, b2 = st.columns(2)
+    st.markdown(
+        """
+        <div class="section-head">
+          <div class="section-title">Carte</div>
+          <div class="section-sub">Placez départ et arrivée</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    b1, b2 = st.columns(2, gap="small")
     with b1:
         pickup_clicked = st.button(
             "Départ",
@@ -564,7 +643,7 @@ def render_clickable_route_map(
     map_data = st_folium(
         route_map,
         width=None,
-        height=300,
+        height=360,
         returned_objects=["last_clicked"],
         key="route_map_clicker",
     )
@@ -599,26 +678,37 @@ def render_photo_scenes() -> None:
         st.session_state.photo_pickup = None
         st.session_state.photo_dropoff = None
 
-    for row_start in range(0, len(DEMO_IMAGES), 4):
-        demo_cols = st.columns(4, gap="small")
-        for i, demo in enumerate(DEMO_IMAGES[row_start : row_start + 4]):
+    st.markdown(
+        """
+        <div class="section-head landmarks-head">
+          <div class="section-title">Lieux emblématiques</div>
+          <div class="section-sub">1er clic = départ · 2e clic = arrivée</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    for row_start in range(0, len(DEMO_IMAGES), 6):
+        demo_cols = st.columns(6, gap="small")
+        for i, demo in enumerate(DEMO_IMAGES[row_start : row_start + 6]):
             idx = row_start + i
             is_pickup = st.session_state.photo_pickup == demo["filename"]
             is_dropoff = st.session_state.photo_dropoff == demo["filename"]
             if is_pickup:
                 frame = "pickup"
-                label = f"Départ · {demo['label']}"
+                label = "Départ"
             elif is_dropoff:
                 frame = "dropoff"
-                label = f"Arrivée · {demo['label']}"
+                label = "Arrivée"
             else:
                 frame = ""
-                label = demo["label"]
+                label = "Choisir"
 
             with demo_cols[i]:
                 st.markdown(
                     f'<div class="scene-card {frame}">'
                     f'<img src="{place_image_uri(demo["filename"])}" alt="{demo["label"]}">'
+                    f'<div class="scene-caption">{demo["label"]}</div>'
                     f"</div>",
                     unsafe_allow_html=True,
                 )
@@ -804,39 +894,49 @@ if "preset_key" not in st.session_state:
 apply_pending_photo_points()
 apply_pending_map_click()
 
-render_photo_scenes()
-
-left, mid, right = st.columns([0.9, 1.2, 0.85], gap="medium")
+left, mid, right = st.columns([0.95, 1.25, 0.95], gap="large")
 
 with left:
+    st.markdown(
+        """
+        <div class="section-head">
+          <div class="section-title">Trajet</div>
+          <div class="section-sub">Preset, coordonnées, horaire</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.selectbox(
-        "Trajet NYC",
+        "Itinéraire NYC",
         list(NYC_PRESETS.keys()),
         key="preset_key",
         on_change=on_preset_change,
     )
 
-    c1, c2 = st.columns(2)
+    st.markdown('<div class="kicker kicker-green">Départ</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2, gap="small")
     with c1:
         pickup_lat = st.number_input(
-            "Pickup lat", format="%.3f", step=0.001, key="pickup_latitude"
+            "Lat. départ", format="%.3f", step=0.001, key="pickup_latitude"
         )
     with c2:
         pickup_lon = st.number_input(
-            "Pickup lon", format="%.3f", step=0.001, key="pickup_longitude"
+            "Lon. départ", format="%.3f", step=0.001, key="pickup_longitude"
         )
 
-    c1, c2 = st.columns(2)
+    st.markdown('<div class="kicker kicker-red">Arrivée</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2, gap="small")
     with c1:
         dropoff_lat = st.number_input(
-            "Dropoff lat", format="%.3f", step=0.001, key="dropoff_latitude"
+            "Lat. arrivée", format="%.3f", step=0.001, key="dropoff_latitude"
         )
     with c2:
         dropoff_lon = st.number_input(
-            "Dropoff lon", format="%.3f", step=0.001, key="dropoff_longitude"
+            "Lon. arrivée", format="%.3f", step=0.001, key="dropoff_longitude"
         )
 
-    c1, c2, c3 = st.columns(3)
+    st.markdown('<div class="kicker">Course</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2, gap="small")
     with c1:
         ride_date = st.date_input("Date", value=datetime.now().date())
     with c2:
@@ -844,19 +944,27 @@ with left:
             "Heure",
             value=datetime.now().replace(second=0, microsecond=0).time(),
         )
-    with c3:
-        passenger_count = st.number_input(
-            "Passagers",
-            min_value=1,
-            max_value=8,
-            step=1,
-            key="passenger_count",
-        )
+    passenger_count = st.number_input(
+        "Passagers",
+        min_value=1,
+        max_value=8,
+        step=1,
+        key="passenger_count",
+    )
 
 with mid:
     render_clickable_route_map(pickup_lat, pickup_lon, dropoff_lat, dropoff_lon)
 
 with right:
+    st.markdown(
+        """
+        <div class="section-head">
+          <div class="section-title">Estimation</div>
+          <div class="section-sub">Prédiction API</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     pickup_datetime = datetime.combine(ride_date, ride_time)
     auto_estimate_fare(
         pickup_datetime,
@@ -866,6 +974,8 @@ with right:
         dropoff_lat,
         passenger_count,
     )
+
+render_photo_scenes()
 
 
 # ============================================================
