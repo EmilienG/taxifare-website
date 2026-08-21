@@ -3,3 +3,4 @@ requests
 python-dotenv
 folium
 streamlit-folium
+streamlit-searchbox

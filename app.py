@@ -4,13 +4,15 @@ import os
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import folium
 import requests
 import streamlit as st
+from branca.element import MacroElement, Template
 from dotenv import load_dotenv
 from streamlit_folium import st_folium
+from streamlit_searchbox import st_searchbox
 
 load_dotenv()
 
@@ -31,7 +33,106 @@ st.set_page_config(
 # API_BASE = os.getenv("TAXIFARE_API_URL", "http://127.0.0.1:8000").rstrip("/")
 API_BASE = os.getenv("TAXIFARE_API_URL", "https://taxifare.lewagon.ai").rstrip("/")
 PREDICT_URL = f"{API_BASE}/predict"
-ROOT_URL = f"{API_BASE}/"
+GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "").strip()
+
+# Greater NYC (Manhattan, Brooklyn, Queens, Bronx, Staten Island, JFK, LGA).
+NYC_BBOX = {
+    "min_lat": 40.4774,
+    "max_lat": 40.9176,
+    "min_lon": -74.2591,
+    "max_lon": -73.7004,
+}
+NYC_CENTER_LAT = 40.7128
+NYC_CENTER_LON = -74.0060
+NYC_SEARCH_RADIUS_M = 50_000
+PHOTON_URL = "https://photon.komoot.io/api/"
+PHOTON_REVERSE_URL = "https://photon.komoot.io/reverse"
+GOOGLE_AUTOCOMPLETE_URL = (
+    "https://maps.googleapis.com/maps/api/place/autocomplete/json"
+)
+GOOGLE_DETAILS_URL = "https://maps.googleapis.com/maps/api/place/details/json"
+GOOGLE_GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
+GEOCODE_HEADERS = {"User-Agent": "TaxiFare-Website/1.0"}
+
+
+def _searchbox_theme_style(
+    bg: str, fg: str, muted: str, border: str, highlight: str
+) -> dict:
+    control = {
+        "backgroundColor": bg,
+        "border": f"1px solid {border}",
+        "borderColor": border,
+        "borderRadius": "12px",
+        "color": fg,
+        "WebkitTextFillColor": fg,
+        "caretColor": fg,
+        "boxShadow": "none",
+        "minHeight": "42px",
+        "cursor": "text",
+        "&:hover": {"border": f"1px solid {border}"},
+    }
+    return {
+        "wrapper": {
+            "backgroundColor": "transparent",
+            "color": fg,
+            "width": "100%",
+        },
+        "dropdown": {
+            "width": 0,
+            "height": 0,
+            "fill": "transparent",
+            "stroke": "transparent",
+        },
+        "clear": {
+            "icon": "cross",
+            "clearable": "after-submit",
+            "fill": muted,
+            "stroke": muted,
+            "width": 16,
+            "height": 16,
+        },
+        "searchbox": {
+            "optionEmpty": "hidden",
+            "menuList": {
+                "backgroundColor": bg,
+                "color": fg,
+                "borderRadius": "12px",
+                "border": f"1px solid {border}",
+                "padding": "6px",
+                "marginTop": "6px",
+                "boxShadow": "0 16px 40px rgba(0,0,0,0.22)",
+            },
+            "singleValue": {"display": "none"},
+            "input": {
+                "color": fg,
+                "backgroundColor": "transparent",
+                "WebkitTextFillColor": fg,
+                "caretColor": fg,
+            },
+            "placeholder": {"color": muted, "WebkitTextFillColor": muted},
+            "control": control,
+            "option": {
+                "color": fg,
+                "backgroundColor": bg,
+                "WebkitTextFillColor": fg,
+                "highlightColor": highlight,
+                "borderRadius": "8px",
+                "cursor": "pointer",
+                "padding": "8px 10px",
+            },
+        },
+    }
+
+
+SEARCHBOX_STYLE_LIGHT = _searchbox_theme_style(
+    "#ffffff", "#161920", "#5c6572", "rgba(28,24,16,0.14)", "#c49212"
+)
+SEARCHBOX_STYLE_DARK = _searchbox_theme_style(
+    "#0a0e14", "#f5f7fa", "#8d96a5", "rgba(255,255,255,0.09)", "#f7c948"
+)
+SEARCHBOX_STYLE_PRO = _searchbox_theme_style(
+    "#151b2e", "#f4efe4", "#9aa3b5", "rgba(212,176,106,0.28)", "#d4b06a"
+)
 
 NYC_PRESETS = {
     "Times Square → JFK": {
@@ -146,85 +247,423 @@ DEMO_IMAGES = [
         "latitude": 40.7308,
         "longitude": -73.9973,
     },
+    {
+        "label": "Statue of Liberty",
+        "filename": "statue_of_liberty.jpg",
+        "latitude": 40.6892,
+        "longitude": -74.0445,
+    },
+    {
+        "label": "Flatiron",
+        "filename": "flatiron.jpg",
+        "latitude": 40.7411,
+        "longitude": -73.9897,
+    },
+    {
+        "label": "Chrysler",
+        "filename": "chrysler.jpg",
+        "latitude": 40.7516,
+        "longitude": -73.9755,
+    },
+    {
+        "label": "Hudson Yards",
+        "filename": "hudson_yards.jpg",
+        "latitude": 40.7538,
+        "longitude": -74.0021,
+    },
+    {
+        "label": "DUMBO",
+        "filename": "dumbo.jpg",
+        "latitude": 40.7033,
+        "longitude": -73.9881,
+    },
+    {
+        "label": "Guggenheim",
+        "filename": "guggenheim.jpg",
+        "latitude": 40.7830,
+        "longitude": -73.9590,
+    },
+    {
+        "label": "Coney Island",
+        "filename": "coney_island.jpg",
+        "latitude": 40.5755,
+        "longitude": -73.9787,
+    },
+    {
+        "label": "Bryant Park",
+        "filename": "bryant_park.jpg",
+        "latitude": 40.7536,
+        "longitude": -73.9832,
+    },
 ]
 
 # ============================================================
-# CSS — keep TaxiFare yellow night identity, add motion
+# THEME
 # ============================================================
 
-st.markdown(
-    """
-<style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+THEMES = ("pro", "dark", "light")
+DEFAULT_THEME = "pro"
+THEME_LABELS = {
+    "pro": "✨ Pro",
+    "dark": "🌙 Nuit",
+    "light": "☀️ Jour",
+}
+THEME_MAP_TILES = {
+    "pro": "CartoDB dark_matter",
+    "dark": "CartoDB dark_matter",
+    "light": "CartoDB positron",
+}
+THEME_ROUTE_COLOR = {
+    "pro": "#d4b06a",
+    "dark": "#f7c948",
+    "light": "#c49212",
+}
+SEARCHBOX_STYLES = {
+    "pro": SEARCHBOX_STYLE_PRO,
+    "dark": SEARCHBOX_STYLE_DARK,
+    "light": SEARCHBOX_STYLE_LIGHT,
+}
 
+
+def init_theme() -> None:
+    if "theme" not in st.session_state:
+        requested = st.query_params.get("theme", DEFAULT_THEME)
+        if isinstance(requested, list):
+            requested = requested[0] if requested else DEFAULT_THEME
+        st.session_state.theme = requested if requested in THEMES else DEFAULT_THEME
+
+
+def cycle_theme() -> None:
+    current = st.session_state.get("theme", DEFAULT_THEME)
+    index = THEMES.index(current) if current in THEMES else 0
+    st.session_state.theme = THEMES[(index + 1) % len(THEMES)]
+    st.query_params["theme"] = st.session_state.theme
+
+
+init_theme()
+
+# ============================================================
+# CSS — Pro (default), taxi night, warm daylight
+# ============================================================
+
+PRO_THEME_CSS = """
 :root {
+    color-scheme: dark;
+    --bg: #0a0f1c;
+    --bg-spot-1: rgba(212,176,106,0.16);
+    --bg-spot-2: rgba(78,205,196,0.10);
+    --bg-spot-3: rgba(124,108,232,0.10);
+    --border: rgba(212,176,106,0.16);
+    --text: #f4efe4;
+    --muted: #9aa3b5;
+    --yellow: #d4b06a;
+    --green: #4ecdc4;
+    --red: #e07a7a;
+    --ink: #0a0f1c;
+    --label: #c9d0de;
+    --status-fg: #c9d0de;
+    --status-bg: rgba(255,255,255,0.045);
+    --dim: #7d8699;
+    --input-bg: #151b2e;
+    --input-fg: #f4efe4;
+    --input-border: rgba(212,176,106,0.38);
+    --input-ring: 0 0 0 1px rgba(212,176,106,0.08);
+    --card-a: rgba(255,255,255,0.06);
+    --card-b: rgba(16,22,40,0.72);
+    --card-shadow: 0 22px 50px rgba(4,8,20,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+    --price-glow: rgba(212,176,106,0.28);
+    --price-fill: rgba(212,176,106,0.06);
+    --price-border: rgba(212,176,106,0.28);
+    --metric-bg: rgba(255,255,255,0.045);
+    --metric-border: rgba(212,176,106,0.14);
+    --btn-secondary-bg: rgba(255,255,255,0.05);
+    --btn-secondary-border: rgba(212,176,106,0.22);
+    --btn-secondary-hover: rgba(212,176,106,0.14);
+    --scene-btn-bg: rgba(10, 15, 28, 0.92);
+    --scene-btn-fg: #f4efe4;
+    --scene-btn-border: rgba(212,176,106,0.18);
+    --scene-card-border: rgba(212,176,106,0.18);
+    --scene-card-bg: rgba(255,255,255,0.04);
+    --footer: #6b7386;
+    --scheme: dark;
+    --btn-grad-a: #d4b06a;
+    --btn-grad-b: #f0d7a2;
+    --btn-shadow: rgba(212,176,106,0.22);
+    --glow: rgba(212,176,106,0.45);
+}
+"""
+
+DARK_THEME_CSS = """
+:root {
+    color-scheme: dark;
     --bg: #07090d;
+    --bg-spot-1: rgba(247,201,72,0.10);
+    --bg-spot-2: rgba(71,230,161,0.06);
+    --bg-spot-3: rgba(247,201,72,0.04);
     --border: rgba(255,255,255,0.08);
     --text: #f5f7fa;
     --muted: #8d96a5;
     --yellow: #f7c948;
     --green: #47e6a1;
     --red: #ff6b7a;
+    --ink: #0a0b0e;
+    --label: #b7c0cc;
+    --status-fg: #aab3c0;
+    --status-bg: rgba(255,255,255,0.035);
+    --dim: #707987;
+    --input-bg: #0a0e14;
+    --input-fg: #f5f7fa;
+    --input-border: rgba(255,255,255,0.22);
+    --input-ring: 0 0 0 1px rgba(255,255,255,0.04);
+    --card-a: rgba(255,255,255,0.045);
+    --card-b: rgba(255,255,255,0.015);
+    --card-shadow: 0 18px 50px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
+    --price-glow: rgba(247,201,72,0.16);
+    --price-fill: rgba(247,201,72,0.04);
+    --price-border: rgba(247,201,72,0.16);
+    --metric-bg: rgba(255,255,255,0.04);
+    --metric-border: rgba(255,255,255,0.06);
+    --btn-secondary-bg: rgba(255,255,255,0.06);
+    --btn-secondary-border: rgba(255,255,255,0.09);
+    --btn-secondary-hover: rgba(255,255,255,0.10);
+    --scene-btn-bg: rgba(8, 10, 14, 0.92);
+    --scene-btn-fg: #e8edf4;
+    --scene-btn-border: rgba(255,255,255,0.08);
+    --scene-card-border: rgba(255,255,255,0.08);
+    --scene-card-bg: rgba(255,255,255,0.03);
+    --footer: #4f5866;
+    --scheme: dark;
+    --btn-grad-a: #f7c948;
+    --btn-grad-b: #ffdc73;
+    --btn-shadow: rgba(247,201,72,0.14);
+    --glow: rgba(247,201,72,0.45);
+}
+"""
+
+LIGHT_THEME_CSS = """
+:root {
+    color-scheme: light;
+    --bg: #f4f1e8;
+    --bg-spot-1: rgba(247,201,72,0.28);
+    --bg-spot-2: rgba(15,157,106,0.10);
+    --bg-spot-3: rgba(247,201,72,0.12);
+    --border: rgba(28,24,16,0.10);
+    --text: #161920;
+    --muted: #5c6572;
+    --yellow: #c49212;
+    --green: #0c8f61;
+    --red: #d03a4c;
+    --ink: #161920;
+    --label: #3d4654;
+    --status-fg: #3d4654;
+    --status-bg: rgba(255,255,255,0.78);
+    --dim: #6a7380;
+    --input-bg: #ffffff;
+    --input-fg: #161920;
+    --input-border: #8a8376;
+    --input-ring: 0 1px 2px rgba(28,24,16,0.08);
+    --card-a: #ffffff;
+    --card-b: #faf7f0;
+    --card-shadow: 0 18px 40px rgba(40,30,10,0.08), inset 0 1px 0 rgba(255,255,255,0.95);
+    --price-glow: rgba(247,201,72,0.32);
+    --price-fill: #fffdf6;
+    --price-border: rgba(196,146,18,0.28);
+    --metric-bg: rgba(22,25,32,0.04);
+    --metric-border: rgba(28,24,16,0.08);
+    --btn-secondary-bg: #ffffff;
+    --btn-secondary-border: rgba(28,24,16,0.12);
+    --btn-secondary-hover: #fff6d8;
+    --scene-btn-bg: #ffffff;
+    --scene-btn-fg: #161920;
+    --scene-btn-border: rgba(28,24,16,0.10);
+    --scene-card-border: rgba(28,24,16,0.10);
+    --scene-card-bg: #ffffff;
+    --footer: #8b919c;
+    --scheme: light;
+    --btn-grad-a: #d4a017;
+    --btn-grad-b: #f0c44a;
+    --btn-shadow: rgba(196,146,18,0.20);
+    --glow: rgba(196,146,18,0.35);
+}
+"""
+
+THEME_CSS = {
+    "pro": PRO_THEME_CSS,
+    "dark": DARK_THEME_CSS,
+    "light": LIGHT_THEME_CSS,
+}
+
+APP_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+    color-scheme: dark;
+    --bg: #0a0f1c;
+    --bg-spot-1: rgba(212,176,106,0.16);
+    --bg-spot-2: rgba(78,205,196,0.10);
+    --bg-spot-3: rgba(124,108,232,0.10);
+    --border: rgba(212,176,106,0.16);
+    --text: #f4efe4;
+    --muted: #9aa3b5;
+    --yellow: #d4b06a;
+    --green: #4ecdc4;
+    --red: #e07a7a;
+    --ink: #0a0f1c;
+    --label: #c9d0de;
+    --status-fg: #c9d0de;
+    --status-bg: rgba(255,255,255,0.045);
+    --dim: #7d8699;
+    --input-bg: #151b2e;
+    --input-fg: #f4efe4;
+    --input-border: rgba(212,176,106,0.38);
+    --input-ring: 0 0 0 1px rgba(212,176,106,0.08);
+    --card-a: rgba(255,255,255,0.06);
+    --card-b: rgba(16,22,40,0.72);
+    --card-shadow: 0 22px 50px rgba(4,8,20,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+    --price-glow: rgba(212,176,106,0.28);
+    --price-fill: rgba(212,176,106,0.06);
+    --price-border: rgba(212,176,106,0.28);
+    --metric-bg: rgba(255,255,255,0.045);
+    --metric-border: rgba(212,176,106,0.14);
+    --btn-secondary-bg: rgba(255,255,255,0.05);
+    --btn-secondary-border: rgba(212,176,106,0.22);
+    --btn-secondary-hover: rgba(212,176,106,0.14);
+    --scene-btn-bg: rgba(10, 15, 28, 0.92);
+    --scene-btn-fg: #f4efe4;
+    --scene-btn-border: rgba(212,176,106,0.18);
+    --scene-card-border: rgba(212,176,106,0.18);
+    --scene-card-bg: rgba(255,255,255,0.04);
+    --footer: #6b7386;
+    --space-1: 0.4rem;
+    --space-2: 0.7rem;
+    --space-3: 1rem;
+    --space-4: 1.25rem;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --page-pad-x: 2rem;
+    --page-pad-y: 1.2rem;
+    --scheme: dark;
+    --btn-grad-a: #d4b06a;
+    --btn-grad-b: #f0d7a2;
+    --btn-shadow: rgba(212,176,106,0.22);
+    --glow: rgba(212,176,106,0.45);
 }
 
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
-.stApp {
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stMain"],
+[data-testid="stMainBlockContainer"] {
+    --st-background-color: var(--bg);
+    --st-secondary-background-color: var(--input-bg);
+    --st-text-color: var(--text);
+    --st-heading-color: var(--text);
+    --st-border-color: var(--border);
+    --st-widget-border-color: var(--input-border);
+    --st-primary-color: var(--yellow);
+    --background-color: var(--bg);
+    --secondary-background-color: var(--input-bg);
+    --text-color: var(--text);
+    color-scheme: var(--scheme);
     background:
-        radial-gradient(circle at 12% 8%, rgba(247,201,72,0.10), transparent 32%),
-        radial-gradient(circle at 88% 12%, rgba(71,230,161,0.06), transparent 30%),
-        radial-gradient(circle at 50% 100%, rgba(247,201,72,0.04), transparent 40%),
+        radial-gradient(circle at 12% 8%, var(--bg-spot-1), transparent 32%),
+        radial-gradient(circle at 88% 12%, var(--bg-spot-2), transparent 30%),
+        radial-gradient(circle at 50% 100%, var(--bg-spot-3), transparent 40%),
         var(--bg);
     color: var(--text);
 }
 
-.block-container {
+.block-container,
+[data-testid="stMainBlockContainer"] {
     max-width: 1320px;
-    padding-top: 1.35rem !important;
-    padding-bottom: 1.6rem !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
+    padding-top: var(--page-pad-y) !important;
+    padding-bottom: 1.5rem !important;
+    padding-left: var(--page-pad-x) !important;
+    padding-right: var(--page-pad-x) !important;
 }
 
 #MainMenu, footer, header, [data-testid="stHeader"] { display: none !important; }
 
-[data-testid="stVerticalBlock"] { gap: 0.7rem !important; }
-[data-testid="stWidgetLabel"] { margin-bottom: 0.2rem; }
+[data-testid="stVerticalBlock"] { gap: var(--space-2) !important; }
+.block-container [data-testid="stElementContainer"] { margin-bottom: 0 !important; }
+[data-testid="stWidgetLabel"] { margin-bottom: 0.25rem; }
 [data-testid="stWidgetLabel"] p {
     font-size: 12px !important;
     font-weight: 600;
-    color: #b7c0cc !important;
+    color: var(--label) !important;
 }
 [data-testid="InputInstructions"] { display: none !important; }
-[data-testid="stCaptionContainer"] { margin-top: 0.2rem !important; }
+
+/* One compact typeahead: iframe overlays so suggestions are not a 2nd field */
+div[data-testid="stElementContainer"]:has(iframe[title="streamlit_searchbox.searchbox"]),
+div[data-testid="element-container"]:has(iframe[title="streamlit_searchbox.searchbox"]) {
+    position: relative !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    overflow: visible !important;
+    z-index: 50;
+}
+div[data-testid="stElementContainer"]:has(.kicker-green) + div[data-testid="stElementContainer"],
+div[data-testid="element-container"]:has(.kicker-green) + div[data-testid="element-container"] {
+    z-index: 70 !important;
+}
+div[data-testid="stElementContainer"]:has(.kicker-red) + div[data-testid="stElementContainer"],
+div[data-testid="element-container"]:has(.kicker-red) + div[data-testid="element-container"] {
+    z-index: 60 !important;
+}
+div:has(> iframe[title="streamlit_searchbox.searchbox"]) {
+    overflow: visible !important;
+    height: 44px !important;
+}
+iframe[title="streamlit_searchbox.searchbox"] {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    min-height: 44px !important;
+    background: transparent !important;
+    border: none !important;
+    color-scheme: var(--scheme);
+    z-index: 1;
+}
+[data-testid="stCaptionContainer"] { margin-top: 0.15rem !important; }
 [data-testid="stCaptionContainer"] p { font-size: 12px !important; color: var(--muted) !important; }
 
-@keyframes pulse-dot {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(71,230,161,0.7); }
-    50% { box-shadow: 0 0 0 8px rgba(71,230,161,0); }
-}
 @keyframes fare-in {
     from { opacity: 0; transform: translateY(12px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes glow-route {
-    0%, 100% { filter: drop-shadow(0 0 4px rgba(247,201,72,0.35)); }
-    50% { filter: drop-shadow(0 0 14px rgba(247,201,72,0.7)); }
+    0%, 100% { filter: drop-shadow(0 0 4px var(--glow)); }
+    50% { filter: drop-shadow(0 0 14px var(--glow)); }
+}
+
+div[data-testid="stHorizontalBlock"]:has(.brand) {
+    align-items: center !important;
+    margin: 0 0 var(--space-4);
+    padding: 0 2px var(--space-3);
+    border-bottom: 1px solid var(--border);
+    gap: 0.75rem !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.brand) [data-testid="stVerticalBlock"] {
+    gap: 0.45rem !important;
 }
 
 .brand {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 16px;
-    margin: 0 0 1.15rem;
-    padding: 0 2px 1rem;
-    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    min-height: 44px;
 }
-.brand-left { display: flex; align-items: center; gap: 14px; }
+.brand-left { display: flex; align-items: center; gap: 12px; }
 .logo {
-    width: 44px; height: 44px; border-radius: 13px;
+    width: 42px; height: 42px; border-radius: 12px;
     background: linear-gradient(135deg, #f7c948, #ffdf78);
     display: flex; align-items: center; justify-content: center;
-    color: #0a0b0e; font-size: 22px;
+    color: #0a0b0e; font-size: 21px;
     box-shadow: 0 8px 24px rgba(247,201,72,0.25);
     animation: glow-route 3.2s ease-in-out infinite;
     flex-shrink: 0;
@@ -235,67 +674,54 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 }
 .brand-tag { color: var(--muted); font-size: 12px; margin-top: 3px; }
 
-.status {
-    display: flex; align-items: center; gap: 8px;
-    color: #aab3c0; font-size: 12px;
-    background: rgba(255,255,255,0.035);
-    border: 1px solid var(--border);
-    padding: 8px 13px; border-radius: 999px;
-    white-space: nowrap;
-}
-.status.offline { color: #c9a0a5; }
-.status-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--green);
-    animation: pulse-dot 1.8s ease-in-out infinite;
-}
-.status.offline .status-dot {
-    background: var(--red);
-    animation: none;
-    box-shadow: none;
-}
-
 .section-head {
     display: flex; align-items: baseline; justify-content: space-between;
-    gap: 12px;
-    margin: 0.15rem 2px 0.15rem;
+    gap: 10px 14px;
+    margin: 0 0 0.2rem;
+    flex-wrap: wrap;
 }
 .section-title {
     font-family: 'Space Grotesk', sans-serif;
     font-size: 15px; font-weight: 600;
 }
-.section-sub { color: var(--muted); font-size: 12px; }
-.landmarks-head { margin-top: 0.35rem; }
+.section-sub { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.landmarks-head {
+    margin-top: 0;
+    margin-bottom: 0.45rem;
+}
 .kicker {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1.3px;
     text-transform: uppercase;
     color: var(--muted);
-    margin: 0.55rem 0 0.05rem;
+    margin: 0.8rem 0 0.15rem;
 }
-.kicker:first-child { margin-top: 0; }
-.kicker-green { color: var(--green); }
+.kicker-green { color: var(--green); margin-top: 0.35rem; }
 .kicker-red { color: var(--red); }
 
-div[data-testid="stColumn"]:has(.section-head),
-div[data-testid="column"]:has(.section-head) {
-    background: linear-gradient(145deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+div[data-testid="stHorizontalBlock"]:has(.main-panel) {
+    align-items: stretch !important;
+    gap: 1rem !important;
+}
+
+div[data-testid="stHorizontalBlock"]:has(.main-panel) > div {
+    background: linear-gradient(145deg, var(--card-a), var(--card-b));
     border: 1px solid var(--border);
-    border-radius: 22px;
-    padding: 1.15rem 1.2rem 1.05rem !important;
-    box-shadow: 0 18px 50px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.15rem 1.05rem !important;
+    box-shadow: var(--card-shadow);
 }
 
 .price-card {
-    margin-top: 0.35rem;
-    padding: 18px 10px 12px;
-    border-radius: 16px;
+    margin-top: 0.25rem;
+    padding: 1.15rem 0.75rem 0.85rem;
+    border-radius: 14px;
     text-align: center;
     background:
-        radial-gradient(circle at 80% 10%, rgba(247,201,72,0.16), transparent 42%),
-        rgba(247,201,72,0.04);
-    border: 1px solid rgba(247,201,72,0.16);
+        radial-gradient(circle at 80% 10%, var(--price-glow), transparent 42%),
+        var(--price-fill);
+    border: 1px solid var(--price-border);
     animation: fare-in 0.55s cubic-bezier(.2,.8,.2,1);
 }
 .price-label {
@@ -307,19 +733,20 @@ div[data-testid="column"]:has(.section-head) {
     font-size: 52px; line-height: 1; letter-spacing: -2px;
     font-weight: 700; color: var(--yellow); margin-top: 12px;
 }
-.price-note { color: #707987; font-size: 12px; margin-top: 10px; line-height: 1.4; }
+.price-note { color: var(--dim); font-size: 12px; margin-top: 10px; line-height: 1.4; }
 
 .metric-row {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 18px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 1rem;
 }
 .metric {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px; padding: 12px 6px 11px;
+    background: var(--metric-bg);
+    border: 1px solid var(--metric-border);
+    border-radius: var(--radius-sm); padding: 11px 6px 10px;
     text-align: center;
+    min-width: 0;
 }
 .metric-label {
-    color: #707987; font-size: 10px; text-transform: uppercase; letter-spacing: 1.1px;
+    color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1.1px;
 }
 .metric-value {
     font-family: 'Space Grotesk', sans-serif;
@@ -327,7 +754,7 @@ div[data-testid="column"]:has(.section-head) {
 }
 
 .stButton > button {
-    width: 100%; border: none; border-radius: 11px; min-height: 40px;
+    width: 100%; border: none; border-radius: 11px; min-height: 42px;
     background: linear-gradient(135deg, #f7c948, #ffdc73);
     color: #0a0b0e;
     font-family: 'Space Grotesk', sans-serif;
@@ -341,113 +768,689 @@ div[data-testid="column"]:has(.section-head) {
 }
 .stButton > button[kind="secondary"],
 .stButton > button[data-testid="baseButton-secondary"] {
-    background: rgba(255,255,255,0.06);
+    background: var(--btn-secondary-bg);
     color: var(--text);
     box-shadow: none;
-    border: 1px solid rgba(255,255,255,0.09);
+    border: 1px solid var(--btn-secondary-border);
 }
 .stButton > button[kind="secondary"]:hover,
 .stButton > button[data-testid="baseButton-secondary"]:hover {
-    background: rgba(255,255,255,0.10);
+    background: var(--btn-secondary-hover);
     box-shadow: none;
 }
 
+div[data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) .stButton > button,
+.st-key-theme_toggle button,
+.st-key-theme_toggle [data-testid="stBaseButton-secondary"],
+.st-key-theme_toggle [data-testid="baseButton-secondary"] {
+    min-height: 42px;
+    border-radius: 999px;
+    background: var(--status-bg) !important;
+    color: var(--status-fg) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+}
+div[data-testid="stVerticalBlock"]:has(.theme-toggle-anchor) .stButton > button:hover,
+.st-key-theme_toggle button:hover {
+    transform: none;
+    background: var(--btn-secondary-hover) !important;
+    box-shadow: none !important;
+    border-color: var(--yellow) !important;
+    color: var(--text) !important;
+}
+
+/* Native Streamlit widgets: always pair field background + readable text */
+[data-testid="stNumberInput"],
+[data-testid="stDateInput"],
+[data-testid="stTimeInput"],
+[data-testid="stSelectbox"],
+[data-testid="stTextInput"] {
+    width: 100%;
+    color-scheme: var(--scheme);
+}
+
+[data-testid="stNumberInputContainer"],
+[data-testid="stDateInput"] [data-baseweb="input"],
+[data-testid="stDateInput"] [data-baseweb="input"] > div,
+[data-testid="stTimeInput"] [data-baseweb="select"],
+[data-testid="stTimeInput"] [data-baseweb="select"] > div,
+[data-testid="stSelectbox"] [data-baseweb="select"],
+[data-testid="stSelectbox"] [data-baseweb="select"] > div,
+[data-testid="stTextInput"] [data-baseweb="input"],
+[data-testid="stTextInput"] [data-baseweb="input"] > div,
+[data-testid="stNumberInput"] [data-baseweb="input"] > div,
+div[data-baseweb="input"],
 div[data-baseweb="input"] > div,
 div[data-baseweb="select"] > div,
-div[data-baseweb="base-input"] {
-    background: #0a0e14 !important;
-    border: 1px solid rgba(255,255,255,0.09) !important;
-    border-radius: 12px !important;
-    min-height: 40px;
-}
-input { color: white !important; }
-
-div[data-testid="stHorizontalBlock"]:has(.scene-card) {
-    gap: 0.7rem !important;
-}
-div[data-testid="stHorizontalBlock"]:has(.scene-card) [data-testid="stVerticalBlock"] {
-    gap: 0 !important;
-}
-div[data-testid="stHorizontalBlock"]:has(.scene-card) .stButton {
-    margin-top: 0;
-}
-div[data-testid="stHorizontalBlock"]:has(.scene-card) .stButton > button {
-    min-height: 32px;
-    font-size: 11px;
-    border-radius: 0 0 12px 12px;
-    box-shadow: none;
-    background: rgba(8, 10, 14, 0.92);
-    color: #e8edf4;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-top: none;
-}
-div[data-testid="stHorizontalBlock"]:has(.scene-card) .stButton > button:hover {
-    transform: none;
-    background: rgba(247,201,72,0.16);
-    color: var(--yellow);
+div[data-baseweb="base-input"],
+div[data-baseweb="base-input"] > div {
+    background-color: var(--input-bg) !important;
+    background: var(--input-bg) !important;
+    color: var(--input-fg) !important;
+    -webkit-text-fill-color: var(--input-fg) !important;
+    border-color: var(--input-border) !important;
+    border-width: 1.5px !important;
+    border-style: solid !important;
+    box-shadow: var(--input-ring, none) !important;
+    border-radius: var(--radius-sm) !important;
+    min-height: 42px;
+    caret-color: var(--input-fg) !important;
+    color-scheme: var(--scheme);
 }
 
+[data-testid="stNumberInputField"],
+[data-testid="stDateInputField"],
+[data-testid="stTimeInputTimeDisplay"],
+[data-testid="stNumberInput"] input,
+[data-testid="stDateInput"] input,
+[data-testid="stTimeInput"] input,
+[data-testid="stSelectbox"] input,
+[data-testid="stTextInput"] input,
+[data-testid="stTimeInput"] [data-baseweb="select"] span,
+[data-testid="stTimeInput"] [data-baseweb="select"] div,
+[data-testid="stSelectbox"] [data-baseweb="select"] span,
+[data-testid="stSelectbox"] [data-baseweb="select"] div,
+input, textarea, select {
+    color: var(--input-fg) !important;
+    -webkit-text-fill-color: var(--input-fg) !important;
+    background-color: var(--input-bg) !important;
+    caret-color: var(--input-fg) !important;
+    color-scheme: var(--scheme);
+}
+
+[data-testid="stNumberInputStepDown"],
+[data-testid="stNumberInputStepUp"] {
+    color: var(--input-fg) !important;
+    background: var(--input-bg) !important;
+}
+[data-testid="stNumberInputStepDown"] svg,
+[data-testid="stNumberInputStepUp"] svg,
+[data-testid="stTimeInput"] svg,
+[data-testid="stDateInput"] svg,
+[data-testid="stSelectbox"] svg {
+    fill: var(--muted) !important;
+    stroke: var(--muted) !important;
+    color: var(--muted) !important;
+}
+
+input::placeholder, textarea::placeholder,
+[data-baseweb="select"] [class*="placeholder"],
+[data-baseweb="input"] [class*="placeholder"] {
+    color: var(--muted) !important;
+    -webkit-text-fill-color: var(--muted) !important;
+    opacity: 1 !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--input-fg) !important;
+    caret-color: var(--input-fg) !important;
+    box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+    transition: background-color 9999s ease-out;
+}
+
+[data-baseweb="popover"],
+[data-baseweb="menu"],
+[data-baseweb="popover"] ul,
+[data-baseweb="popover"] li,
+[data-baseweb="popover"] div,
+ul[role="listbox"],
+li[role="option"] {
+    background-color: var(--input-bg) !important;
+    color: var(--input-fg) !important;
+    -webkit-text-fill-color: var(--input-fg) !important;
+}
+
+.trip-meta { height: 0; overflow: hidden; }
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stWidgetLabel"] p {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: var(--label) !important;
+    letter-spacing: 0.02em;
+}
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stDateInputField"],
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stTimeInputTimeDisplay"],
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stSelectbox"] span,
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stNumberInputField"] {
+    font-size: 15px !important;
+    font-weight: 650 !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.2px;
+}
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stTimeInputClearButton"] {
+    display: none !important;
+}
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-testid="stTimeInputTimeDisplay"] {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+}
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-baseweb="select"] > div,
+div[data-testid="stVerticalBlock"]:has(.trip-meta) [data-baseweb="input"] > div {
+    min-height: 46px !important;
+    padding-left: 0.7rem !important;
+    padding-right: 0.5rem !important;
+}
+
+.scene-carousel {
+    overflow: hidden;
+    margin: 0 0 1.15rem;
+    max-width: 100%;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+}
+.scene-track {
+    display: flex;
+    width: max-content;
+    animation: scene-marquee 48s linear infinite;
+    will-change: transform;
+}
+.scene-group {
+    display: flex;
+    gap: 0.7rem;
+    padding-right: 0.7rem;
+}
+.scene-carousel:hover .scene-track,
+.scene-carousel:focus-within .scene-track {
+    animation-play-state: paused;
+}
+@keyframes scene-marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
 .scene-card {
     position: relative;
-    border-radius: 12px 12px 0 0;
+    display: block;
+    flex: 0 0 172px;
+    width: 172px;
+    border-radius: var(--radius-sm);
     overflow: hidden;
     line-height: 0;
-    border: 2px solid rgba(255,255,255,0.08);
-    border-bottom: none;
-    background: rgba(255,255,255,0.03);
+    border: 2px solid var(--scene-card-border);
+    background: var(--scene-card-bg);
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+a.scene-card,
+a.scene-card:hover,
+a.scene-card:visited {
+    color: inherit;
+    text-decoration: none;
 }
 .scene-card img {
     width: 100%;
-    height: 78px;
+    height: 118px;
     object-fit: cover;
     display: block;
     filter: saturate(1.05) contrast(1.04);
+    transition: transform 0.25s ease, filter 0.25s ease;
+}
+.scene-card:hover img {
+    transform: scale(1.05);
+    filter: saturate(1.12) contrast(1.06) brightness(1.06);
 }
 .scene-caption {
     position: absolute;
     left: 0; right: 0; bottom: 0;
-    padding: 22px 8px 7px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.78));
+    padding: 28px 10px 8px;
+    background: linear-gradient(transparent 0%, rgba(0,0,0,0.58) 40%, rgba(0,0,0,0.92) 100%);
     color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.15px;
     line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.85);
+    pointer-events: none;
+    z-index: 1;
+}
+.scene-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 2;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    line-height: 1.3;
+    pointer-events: none;
 }
 .scene-card.pickup {
     border-color: var(--green);
     box-shadow: 0 0 16px rgba(71,230,161,0.28);
 }
+.scene-card.pickup .scene-badge {
+    background: var(--green);
+    color: #0a0b0e;
+}
 .scene-card.dropoff {
     border-color: var(--red);
     box-shadow: 0 0 16px rgba(255,107,122,0.28);
 }
+.scene-card.dropoff .scene-badge {
+    background: var(--red);
+    color: #fff;
+}
 
 .footer {
     text-align: center;
-    margin-top: 1.15rem;
-    padding-top: 0.9rem;
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
     border-top: 1px solid var(--border);
-    color: #4f5866;
+    color: var(--footer);
     font-size: 11px;
+    line-height: 1.5;
 }
 .footer span { color: var(--yellow); }
 
-iframe { border-radius: 16px; }
+iframe { border-radius: 14px; }
+iframe[title*="folium"] { min-height: 280px; }
 
 @media (max-width: 1100px) {
-    .metric-row { grid-template-columns: 1fr; }
+    :root { --page-pad-x: 1.2rem; }
     .price { font-size: 44px; }
+
+    div[data-testid="stHorizontalBlock"]:has(.main-panel) {
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        align-items: stretch !important;
+        gap: 0.9rem !important;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.main-panel) > div,
+    div[data-testid="stHorizontalBlock"]:has(.main-panel) > [data-testid="stColumn"],
+    div[data-testid="stHorizontalBlock"]:has(.main-panel) > [data-testid="column"] {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    .scene-card { flex-basis: 160px; width: 160px; }
+    .scene-card img { height: 110px; }
+    .scene-caption { font-size: 12.5px; }
+}
+
+@media (max-width: 700px) {
+    :root { --page-pad-x: 0.9rem; --page-pad-y: 0.85rem; }
+
+    .block-container,
+    [data-testid="stMainBlockContainer"] {
+        padding-left: max(0.9rem, env(safe-area-inset-left)) !important;
+        padding-right: max(0.9rem, env(safe-area-inset-right)) !important;
+        padding-bottom: 1.25rem !important;
+    }
+
+    [data-testid="stVerticalBlock"] { gap: 0.55rem !important; }
+
+    div[data-testid="stHorizontalBlock"]:has(.brand) {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.65rem !important;
+        margin-bottom: 0.9rem;
+        padding-bottom: 0.85rem;
+    }
+    div[data-testid="stHorizontalBlock"]:has(.brand) > div {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 1 1 100% !important;
+    }
+
+    .logo { width: 38px; height: 38px; font-size: 19px; border-radius: 11px; }
+    .brand-name { font-size: 20px; }
+
+    .section-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        margin-bottom: 0.15rem;
+    }
+
+    div[data-testid="stHorizontalBlock"]:has(.main-panel) > div {
+        border-radius: 16px;
+        padding: 0.95rem 0.9rem 0.9rem !important;
+    }
+
+    .price { font-size: 40px; letter-spacing: -1.5px; margin-top: 10px; }
+    .price-card { padding: 1rem 0.6rem 0.75rem; }
+    .metric-row { gap: 6px; margin-top: 0.85rem; }
+    .metric { padding: 9px 4px 8px; }
+    .metric-value { font-size: 14px; }
+    .metric-label { font-size: 9px; }
+
+    .scene-group { gap: 0.55rem; padding-right: 0.55rem; }
+    .scene-card { flex-basis: 148px; width: 148px; }
+    .scene-card img { height: 100px; }
+    .scene-caption { font-size: 12px; padding: 24px 8px 7px; }
+    .landmarks-head { margin-top: 0; }
+
+    iframe[title*="folium"] { height: 260px !important; min-height: 240px; }
+    iframe { border-radius: 12px; }
+
+    .kicker { margin-top: 0.75rem; }
+    .kicker-green { margin-top: 0.25rem; }
+    .footer { margin-top: 1rem; padding-top: 0.8rem; }
+}
+
+@media (max-width: 420px) {
+    .brand-tag { font-size: 11px; }
+    .price { font-size: 34px; letter-spacing: -1px; }
+    .metric-row { grid-template-columns: 1fr; }
+
+    div[data-testid="stColumn"]:has(.kicker-green) [data-testid="stHorizontalBlock"] {
+        flex-wrap: wrap !important;
+        gap: 0.55rem !important;
+    }
+    div[data-testid="stColumn"]:has(.kicker-green) [data-testid="stHorizontalBlock"] > div,
+    div[data-testid="column"]:has(.kicker-green) [data-testid="stHorizontalBlock"] > div {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+
+    .scene-card { flex-basis: 136px; width: 136px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scene-track { animation: none; }
+    .scene-carousel {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+    .scene-carousel::-webkit-scrollbar { display: none; }
+    .scene-group + .scene-group { display: none; }
 }
 </style>
-""",
-    unsafe_allow_html=True,
-)
+"""
 
 
 # ============================================================
 # HELPERS
 # ============================================================
+
+def in_nyc_bbox(lat: float, lon: float) -> bool:
+    return (
+        NYC_BBOX["min_lat"] <= lat <= NYC_BBOX["max_lat"]
+        and NYC_BBOX["min_lon"] <= lon <= NYC_BBOX["max_lon"]
+    )
+
+
+def _photon_label(props: dict) -> str:
+    parts: list[str] = []
+    name = props.get("name")
+    housenumber = props.get("housenumber")
+    street = props.get("street")
+    if housenumber and street:
+        parts.append(f"{housenumber} {street}")
+    elif street:
+        parts.append(street)
+    if name and name not in parts:
+        parts.insert(0, name)
+    for key in ("district", "city", "state"):
+        value = props.get(key)
+        if value and value not in parts:
+            parts.append(value)
+    return ", ".join(parts) if parts else "New York"
+
+
+def google_autocomplete(query: str) -> list[tuple[str, dict]]:
+    response = requests.get(
+        GOOGLE_AUTOCOMPLETE_URL,
+        params={
+            "input": query,
+            "key": GOOGLE_PLACES_API_KEY,
+            "language": "en",
+            "components": "country:us",
+            "location": f"{NYC_CENTER_LAT},{NYC_CENTER_LON}",
+            "radius": NYC_SEARCH_RADIUS_M,
+            "strictbounds": "true",
+        },
+        timeout=6,
+    )
+    response.raise_for_status()
+    data = response.json()
+    status = data.get("status")
+    if status not in ("OK", "ZERO_RESULTS"):
+        raise RuntimeError(data.get("error_message") or status or "GOOGLE_ERROR")
+    results: list[tuple[str, dict]] = []
+    for pred in data.get("predictions") or []:
+        label = pred.get("description") or ""
+        place_id = pred.get("place_id")
+        if not label or not place_id:
+            continue
+        results.append(
+            (label, {"source": "google", "place_id": place_id, "label": label})
+        )
+    return results
+
+
+def photon_search(query: str) -> list[tuple[str, dict]]:
+    bbox = (
+        f"{NYC_BBOX['min_lon']},{NYC_BBOX['min_lat']},"
+        f"{NYC_BBOX['max_lon']},{NYC_BBOX['max_lat']}"
+    )
+    response = requests.get(
+        PHOTON_URL,
+        params={"q": query, "limit": 8, "lang": "en", "bbox": bbox},
+        headers=GEOCODE_HEADERS,
+        timeout=6,
+    )
+    response.raise_for_status()
+    results: list[tuple[str, dict]] = []
+    for feat in response.json().get("features") or []:
+        coords = (feat.get("geometry") or {}).get("coordinates") or []
+        if len(coords) < 2:
+            continue
+        lon, lat = float(coords[0]), float(coords[1])
+        if not in_nyc_bbox(lat, lon):
+            continue
+        label = _photon_label(feat.get("properties") or {})
+        results.append(
+            (label, {"source": "photon", "lat": lat, "lon": lon, "label": label})
+        )
+    return results
+
+
+def google_reverse_geocode(lat: float, lon: float) -> Optional[str]:
+    response = requests.get(
+        GOOGLE_GEOCODE_URL,
+        params={
+            "latlng": f"{lat},{lon}",
+            "key": GOOGLE_PLACES_API_KEY,
+            "language": "en",
+        },
+        timeout=6,
+    )
+    response.raise_for_status()
+    data = response.json()
+    if data.get("status") not in ("OK", "ZERO_RESULTS"):
+        raise RuntimeError(data.get("error_message") or data.get("status") or "GOOGLE_ERROR")
+    for result in data.get("results") or []:
+        label = (result.get("formatted_address") or "").strip()
+        if label:
+            return label
+    return None
+
+
+def photon_reverse_geocode(lat: float, lon: float) -> Optional[str]:
+    response = requests.get(
+        PHOTON_REVERSE_URL,
+        params={"lat": lat, "lon": lon, "lang": "en", "limit": 1},
+        headers=GEOCODE_HEADERS,
+        timeout=6,
+    )
+    response.raise_for_status()
+    features = response.json().get("features") or []
+    if not features:
+        return None
+    label = _photon_label(features[0].get("properties") or {})
+    return label or None
+
+
+@st.cache_data(ttl=3600)
+def reverse_geocode(lat: float, lon: float) -> str:
+    lat, lon = round(float(lat), 5), round(float(lon), 5)
+    if GOOGLE_PLACES_API_KEY:
+        try:
+            label = google_reverse_geocode(lat, lon)
+            if label:
+                return label
+        except Exception:
+            pass
+    try:
+        label = photon_reverse_geocode(lat, lon)
+        if label:
+            return label
+    except Exception:
+        pass
+    return f"{lat:.5f}, {lon:.5f}"
+
+
+def search_nyc_places(searchterm: str) -> list[tuple[str, dict]]:
+    query = (searchterm or "").strip()
+    if len(query) < 2:
+        return []
+    if GOOGLE_PLACES_API_KEY:
+        try:
+            results = google_autocomplete(query)
+            if results:
+                return results
+        except Exception:
+            pass
+    try:
+        return photon_search(query)
+    except Exception:
+        return []
+
+
+def google_place_details(place_id: str) -> Optional[dict]:
+    response = requests.get(
+        GOOGLE_DETAILS_URL,
+        params={
+            "place_id": place_id,
+            "fields": "geometry,formatted_address,name",
+            "key": GOOGLE_PLACES_API_KEY,
+            "language": "en",
+        },
+        timeout=6,
+    )
+    response.raise_for_status()
+    data = response.json()
+    if data.get("status") != "OK":
+        return None
+    result = data.get("result") or {}
+    loc = (result.get("geometry") or {}).get("location") or {}
+    lat, lon = loc.get("lat"), loc.get("lng")
+    if lat is None or lon is None:
+        return None
+    return {
+        "lat": float(lat),
+        "lon": float(lon),
+        "label": result.get("formatted_address") or result.get("name"),
+    }
+
+
+def resolve_place(payload: dict) -> Optional[dict]:
+    source = payload.get("source")
+    if source == "google":
+        place_id = payload.get("place_id")
+        if not place_id:
+            return None
+        try:
+            return google_place_details(place_id)
+        except Exception:
+            return None
+    if source == "photon":
+        lat, lon = payload.get("lat"), payload.get("lon")
+        if lat is None or lon is None:
+            return None
+        return {
+            "lat": float(lat),
+            "lon": float(lon),
+            "label": payload.get("label"),
+        }
+    return None
+
+
+def _address_search_key(target: str) -> str:
+    theme = st.session_state.get("theme", DEFAULT_THEME)
+    return f"{target}_address_search_{theme}"
+
+
+def set_address_field(target: str, label: str) -> None:
+    """Show `label` in the address searchbox by remounting the React component."""
+    text = (label or "").strip()
+    st.session_state[f"{target}_address_label"] = text
+    key = _address_search_key(target)
+    st.session_state[key] = {
+        "result": None,
+        "search": text,
+        "options_js": [],
+        "options_py": [],
+        "key_react": f"{key}_react_{time.time()}",
+    }
+
+
+def apply_selected_place(payload: Any, target: str) -> None:
+    if not isinstance(payload, dict):
+        return
+    identity = payload.get("place_id") or (
+        payload.get("lat"),
+        payload.get("lon"),
+        payload.get("label"),
+    )
+    last_key = f"last_{target}_place"
+    if st.session_state.get(last_key) == identity:
+        return
+    place = resolve_place(payload)
+    if not place:
+        return
+    lat, lon = place["lat"], place["lon"]
+    if not in_nyc_bbox(lat, lon):
+        return
+    if target == "pickup":
+        st.session_state.pickup_latitude = lat
+        st.session_state.pickup_longitude = lon
+        st.session_state.photo_pickup = None
+    else:
+        st.session_state.dropoff_latitude = lat
+        st.session_state.dropoff_longitude = lon
+        st.session_state.photo_dropoff = None
+    st.session_state[last_key] = identity
+    st.session_state.map_fit_route = True
+    if place.get("label"):
+        st.session_state[f"{target}_address_label"] = place["label"]
+
+
+def render_address_search(target: str, placeholder: str) -> None:
+    style = SEARCHBOX_STYLES.get(
+        st.session_state.get("theme", DEFAULT_THEME), SEARCHBOX_STYLE_PRO
+    )
+    selected = st_searchbox(
+        search_nyc_places,
+        placeholder=placeholder,
+        key=_address_search_key(target),
+        debounce=250,
+        edit_after_submit="option",
+        style_overrides=style,
+        default_searchterm=st.session_state.get(f"{target}_address_label", "") or "",
+        submit_function=lambda payload, t=target: apply_selected_place(payload, t),
+    )
+    apply_selected_place(selected, target)
+
 
 def haversine_km(lat1, lon1, lat2, lon2) -> float:
     r = 6371.0
@@ -471,11 +1474,26 @@ def load_preset(preset_name: str) -> None:
         st.session_state[k] = v
     st.session_state.photo_pickup = None
     st.session_state.photo_dropoff = None
-    st.session_state.map_click_target = None
+    st.session_state.map_fit_route = True
 
 
 def on_preset_change() -> None:
     load_preset(st.session_state.preset_key)
+
+
+def consume_photo_click() -> None:
+    """Apply a landmark chosen from the photo grid."""
+    raw = st.query_params.get("place")
+    if not raw:
+        return
+    filename = raw[0] if isinstance(raw, list) else raw
+    try:
+        del st.query_params["place"]
+    except KeyError:
+        pass
+    demo = place_by_filename(filename)
+    if demo:
+        queue_photo_point(demo)
 
 
 def queue_photo_point(demo: dict) -> None:
@@ -517,11 +1535,13 @@ def apply_pending_photo_points() -> None:
         place = pending["pickup"]
         st.session_state.pickup_latitude = place["latitude"]
         st.session_state.pickup_longitude = place["longitude"]
+        set_address_field("pickup", place["label"])
     if "dropoff" in pending:
         place = pending["dropoff"]
         st.session_state.dropoff_latitude = place["latitude"]
         st.session_state.dropoff_longitude = place["longitude"]
-    st.session_state.map_click_target = None
+        set_address_field("dropoff", place["label"])
+    st.session_state.map_fit_route = True
 
     pickup = place_by_filename(st.session_state.get("photo_pickup"))
     dropoff = place_by_filename(st.session_state.get("photo_dropoff"))
@@ -542,20 +1562,65 @@ def apply_pending_photo_points() -> None:
 
 
 def apply_pending_map_click() -> None:
-    """Apply a map click queued on the previous run, before coordinate widgets mount."""
+    """Apply a marker drag queued on the previous run, before coordinate widgets mount."""
     pending = st.session_state.pop("pending_map_click", None)
     if not pending:
         return
 
     lat, lon = pending["lat"], pending["lon"]
+    address = reverse_geocode(lat, lon)
     if pending["target"] == "pickup":
         st.session_state.pickup_latitude = lat
         st.session_state.pickup_longitude = lon
         st.session_state.photo_pickup = None
+        set_address_field("pickup", address)
     else:
         st.session_state.dropoff_latitude = lat
         st.session_state.dropoff_longitude = lon
         st.session_state.photo_dropoff = None
+        set_address_field("dropoff", address)
+
+
+class _DragEndClick(MacroElement):
+    """After a marker is dropped, emit a click so streamlit-folium returns the new lat/lng."""
+
+    _template = Template(
+        """
+        {% macro script(this, kwargs) %}
+        {{ this._parent.get_name() }}.on("dragend", function(e) {
+            var ll = e.target.getLatLng();
+            e.target.fire("click", {
+                latlng: ll,
+                sourceTarget: e.target,
+                target: e.target
+            });
+        });
+        {% endmacro %}
+        """
+    )
+
+
+def _draggable_marker(lat: float, lon: float, label: str, color: str) -> folium.Marker:
+    marker = folium.Marker(
+        [lat, lon],
+        tooltip=label,
+        popup=f"{label}<br>{lat:.5f}, {lon:.5f}",
+        icon=folium.Icon(color=color, icon="info-sign"),
+        draggable=True,
+    )
+    marker.add_child(_DragEndClick())
+    return marker
+
+
+def _drag_target(map_data: Optional[dict]) -> Optional[str]:
+    tooltip = ((map_data or {}).get("last_object_clicked_tooltip") or "").strip()
+    popup = ((map_data or {}).get("last_object_clicked_popup") or "").strip()
+    label = tooltip or popup
+    if "Départ" in label:
+        return "pickup"
+    if "Arrivée" in label:
+        return "dropoff"
+    return None
 
 
 def render_clickable_route_map(
@@ -564,105 +1629,64 @@ def render_clickable_route_map(
     dropoff_lat: float,
     dropoff_lon: float,
 ) -> None:
-    """Place pickup/dropoff by first choosing a button, then clicking the map."""
-    if "map_click_target" not in st.session_state:
-        st.session_state.map_click_target = None
-    if "last_map_click" not in st.session_state:
-        st.session_state.last_map_click = None
-
-    target = st.session_state.map_click_target
-
-    st.markdown(
-        """
-        <div class="section-head">
-          <div class="section-title">Carte</div>
-          <div class="section-sub">Placez départ et arrivée</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    b1, b2 = st.columns(2, gap="small")
-    with b1:
-        pickup_clicked = st.button(
-            "Départ",
-            key="add_pickup_point",
-            type="primary" if target == "pickup" else "secondary",
-            use_container_width=True,
-        )
-    with b2:
-        dropoff_clicked = st.button(
-            "Arrivée",
-            key="add_dropoff_point",
-            type="primary" if target == "dropoff" else "secondary",
-            use_container_width=True,
-        )
-
-    if pickup_clicked:
-        st.session_state.map_click_target = None if target == "pickup" else "pickup"
-        st.rerun()
-    if dropoff_clicked:
-        st.session_state.map_click_target = None if target == "dropoff" else "dropoff"
-        st.rerun()
-
-    if target == "pickup":
-        st.caption("Cliquez la carte pour le **départ**")
-    elif target == "dropoff":
-        st.caption("Cliquez la carte pour l'**arrivée**")
-
+    """Pickup and dropoff pins can be dragged directly on the map."""
+    fit_route = bool(st.session_state.pop("map_fit_route", False))
     center_lat = (pickup_lat + dropoff_lat) / 2
     center_lon = (pickup_lon + dropoff_lon) / 2
 
+    theme_key = st.session_state.get("theme", DEFAULT_THEME)
+    tiles = THEME_MAP_TILES.get(theme_key, "CartoDB dark_matter")
+    route_color = THEME_ROUTE_COLOR.get(theme_key, "#d4b06a")
+    # Keep the base map script stable so dragging does not remount / reset the view.
     route_map = folium.Map(
-        location=[center_lat, center_lon],
+        location=[NYC_CENTER_LAT, NYC_CENTER_LON],
         zoom_start=11,
-        tiles="CartoDB positron",
+        tiles=tiles,
     )
 
-    folium.Marker(
-        [pickup_lat, pickup_lon],
-        tooltip="Départ",
-        popup=f"Départ<br>{pickup_lat:.5f}, {pickup_lon:.5f}",
-        icon=folium.Icon(color="green", icon="info-sign"),
-    ).add_to(route_map)
-
-    folium.Marker(
-        [dropoff_lat, dropoff_lon],
-        tooltip="Arrivée",
-        popup=f"Arrivée<br>{dropoff_lat:.5f}, {dropoff_lon:.5f}",
-        icon=folium.Icon(color="red", icon="info-sign"),
-    ).add_to(route_map)
-
+    points = folium.FeatureGroup(name="points")
+    _draggable_marker(pickup_lat, pickup_lon, "Départ", "green").add_to(points)
+    _draggable_marker(dropoff_lat, dropoff_lon, "Arrivée", "red").add_to(points)
     folium.PolyLine(
         [[pickup_lat, pickup_lon], [dropoff_lat, dropoff_lon]],
-        color="#f7c948",
+        color=route_color,
         weight=4,
         opacity=0.85,
-    ).add_to(route_map)
+    ).add_to(points)
 
     map_data = st_folium(
         route_map,
+        feature_group_to_add=points,
+        center=[center_lat, center_lon] if fit_route else None,
+        zoom=11 if fit_route else None,
         width=None,
         height=360,
-        returned_objects=["last_clicked"],
-        key="route_map_clicker",
+        returned_objects=[
+            "last_object_clicked",
+            "last_object_clicked_tooltip",
+            "last_object_clicked_popup",
+        ],
+        key=f"route_map_clicker_{st.session_state.get('theme', DEFAULT_THEME)}",
+        use_container_width=True,
     )
 
-    clicked = (map_data or {}).get("last_clicked")
-    if not clicked:
+    clicked = (map_data or {}).get("last_object_clicked")
+    target = _drag_target(map_data)
+    if not clicked or not target:
         return
 
-    click_key = (round(clicked["lat"], 3), round(clicked["lng"], 3))
-    if click_key == st.session_state.get("last_map_click"):
+    lat, lon = float(clicked["lat"]), float(clicked["lng"])
+    drag_key = (target, round(lat, 5), round(lon, 5))
+    if drag_key == st.session_state.get("last_map_drag"):
         return
 
-    st.session_state.last_map_click = click_key
-    if not target:
+    current_lat = pickup_lat if target == "pickup" else dropoff_lat
+    current_lon = pickup_lon if target == "pickup" else dropoff_lon
+    if abs(current_lat - lat) < 1e-5 and abs(current_lon - lon) < 1e-5:
         return
 
-    lat, lon = click_key
+    st.session_state.last_map_drag = drag_key
     st.session_state.pending_map_click = {"target": target, "lat": lat, "lon": lon}
-    st.session_state.map_click_target = None
     st.rerun()
 
 
@@ -672,62 +1696,56 @@ def place_image_uri(filename: str) -> str:
     return f"data:image/jpeg;base64,{base64.b64encode(data).decode()}"
 
 
+def scene_card_html(demo: dict, theme: str) -> str:
+    fname = demo["filename"]
+    label = (
+        demo["label"]
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+    if st.session_state.get("photo_pickup") == fname:
+        frame = "pickup"
+        badge = '<div class="scene-badge">Départ</div>'
+    elif st.session_state.get("photo_dropoff") == fname:
+        frame = "dropoff"
+        badge = '<div class="scene-badge">Arrivée</div>'
+    else:
+        frame = ""
+        badge = ""
+    return (
+        f'<a class="scene-card {frame}" href="?theme={theme}&amp;place={fname}" '
+        f'target="_self">'
+        f'<img src="{place_image_uri(fname)}" alt="{label}">'
+        f"{badge}"
+        f'<div class="scene-caption">{label}</div>'
+        f"</a>"
+    )
+
+
 def render_photo_scenes() -> None:
     """Photos are places: first click sets pickup, second sets dropoff."""
     if "photo_pickup" not in st.session_state:
         st.session_state.photo_pickup = None
         st.session_state.photo_dropoff = None
 
+    theme = st.session_state.get("theme", DEFAULT_THEME)
+    cards = "".join(scene_card_html(demo, theme) for demo in DEMO_IMAGES)
     st.markdown(
-        """
-        <div class="section-head landmarks-head">
-          <div class="section-title">Lieux emblématiques</div>
-          <div class="section-sub">1er clic = départ · 2e clic = arrivée</div>
-        </div>
-        """,
+        f"""
+<div class="section-head landmarks-head">
+  <div class="section-title">Lieux emblématiques</div>
+</div>
+<div class="scene-carousel">
+  <div class="scene-track">
+    <div class="scene-group">{cards}</div>
+    <div class="scene-group" aria-hidden="true">{cards}</div>
+  </div>
+</div>
+""",
         unsafe_allow_html=True,
     )
-
-    for row_start in range(0, len(DEMO_IMAGES), 6):
-        demo_cols = st.columns(6, gap="small")
-        for i, demo in enumerate(DEMO_IMAGES[row_start : row_start + 6]):
-            idx = row_start + i
-            is_pickup = st.session_state.photo_pickup == demo["filename"]
-            is_dropoff = st.session_state.photo_dropoff == demo["filename"]
-            if is_pickup:
-                frame = "pickup"
-                label = "Départ"
-            elif is_dropoff:
-                frame = "dropoff"
-                label = "Arrivée"
-            else:
-                frame = ""
-                label = "Choisir"
-
-            with demo_cols[i]:
-                st.markdown(
-                    f'<div class="scene-card {frame}">'
-                    f'<img src="{place_image_uri(demo["filename"])}" alt="{demo["label"]}">'
-                    f'<div class="scene-caption">{demo["label"]}</div>'
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-                if st.button(
-                    label,
-                    key=f"demo_img_{idx}",
-                    type="secondary",
-                ):
-                    queue_photo_point(demo)
-                    st.rerun()
-
-
-@st.cache_data(ttl=30)
-def api_is_up(root_url: str) -> bool:
-    try:
-        r = requests.get(root_url, timeout=4)
-        return r.status_code == 200
-    except requests.RequestException:
-        return False
 
 
 def predict_one(trip: dict, timeout: int = 20) -> float:
@@ -859,12 +1877,12 @@ def render_fare(
 # HEADER
 # ============================================================
 
-online = api_is_up(ROOT_URL)
-status_class = "status" if online else "status offline"
-status_label = "API online" if online else "API offline"
+current_theme = st.session_state.get("theme", DEFAULT_THEME)
 
-st.markdown(
-    f"""
+head_left, head_right = st.columns([4, 1], gap="small", vertical_alignment="center")
+with head_left:
+    st.markdown(
+        """
 <div class="brand">
   <div class="brand-left">
     <div class="logo">🚕</div>
@@ -873,12 +1891,23 @@ st.markdown(
       <div class="brand-tag">Fare Intelligence · optional API</div>
     </div>
   </div>
-  <div class="{status_class}">
-    <div class="status-dot"></div>
-    {status_label}
-  </div>
 </div>
 """,
+        unsafe_allow_html=True,
+    )
+with head_right:
+    st.markdown('<div class="theme-toggle-anchor"></div>', unsafe_allow_html=True)
+    st.button(
+        THEME_LABELS.get(current_theme, "✨ Pro"),
+        key="theme_toggle",
+        type="secondary",
+        on_click=cycle_theme,
+        help="Pro → Nuit → Jour",
+        use_container_width=True,
+    )
+
+st.markdown(
+    APP_CSS + f"<style>{THEME_CSS.get(current_theme, PRO_THEME_CSS)}</style>",
     unsafe_allow_html=True,
 )
 
@@ -890,67 +1919,61 @@ if "preset_key" not in st.session_state:
     st.session_state.preset_key = "Times Square → JFK"
     for k, v in NYC_PRESETS[st.session_state.preset_key].items():
         st.session_state[k] = v
+    st.session_state.map_fit_route = True
+    pickup = place_by_filename("times_square.jpg")
+    dropoff = place_by_filename("jfk_airport.jpg")
+    if pickup:
+        st.session_state.photo_pickup = pickup["filename"]
+        set_address_field("pickup", pickup["label"])
+    if dropoff:
+        st.session_state.photo_dropoff = dropoff["filename"]
+        set_address_field("dropoff", dropoff["label"])
 
+consume_photo_click()
 apply_pending_photo_points()
 apply_pending_map_click()
 
-left, mid, right = st.columns([0.95, 1.25, 0.95], gap="large")
+render_photo_scenes()
+
+left, mid, right = st.columns([0.95, 1.25, 0.95], gap="medium")
 
 with left:
-    st.markdown(
-        """
-        <div class="section-head">
-          <div class="section-title">Trajet</div>
-          <div class="section-sub">Preset, coordonnées, horaire</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.selectbox(
-        "Itinéraire NYC",
-        list(NYC_PRESETS.keys()),
-        key="preset_key",
-        on_change=on_preset_change,
-    )
-
     st.markdown('<div class="kicker kicker-green">Départ</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="small")
-    with c1:
-        pickup_lat = st.number_input(
-            "Lat. départ", format="%.3f", step=0.001, key="pickup_latitude"
-        )
-    with c2:
-        pickup_lon = st.number_input(
-            "Lon. départ", format="%.3f", step=0.001, key="pickup_longitude"
-        )
+    render_address_search("pickup", "Rechercher une adresse…")
 
     st.markdown('<div class="kicker kicker-red">Arrivée</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="small")
-    with c1:
-        dropoff_lat = st.number_input(
-            "Lat. arrivée", format="%.3f", step=0.001, key="dropoff_latitude"
-        )
-    with c2:
-        dropoff_lon = st.number_input(
-            "Lon. arrivée", format="%.3f", step=0.001, key="dropoff_longitude"
-        )
+    render_address_search("dropoff", "Rechercher une adresse…")
 
-    st.markdown('<div class="kicker">Course</div>', unsafe_allow_html=True)
-    c1, c2 = st.columns(2, gap="small")
-    with c1:
-        ride_date = st.date_input("Date", value=datetime.now().date())
-    with c2:
+    st.markdown(
+        '<div class="kicker">Course</div><div class="trip-meta"></div>',
+        unsafe_allow_html=True,
+    )
+    if isinstance(st.session_state.get("passenger_count"), float):
+        st.session_state.passenger_count = int(st.session_state.passenger_count)
+    ride_date = st.date_input(
+        "Date",
+        value=datetime.now().date(),
+        format="DD/MM/YYYY",
+    )
+    time_col, pax_col = st.columns([1.45, 1], gap="small")
+    with time_col:
         ride_time = st.time_input(
             "Heure",
             value=datetime.now().replace(second=0, microsecond=0).time(),
+            step=60,
         )
-    passenger_count = st.number_input(
-        "Passagers",
-        min_value=1,
-        max_value=8,
-        step=1,
-        key="passenger_count",
-    )
+    with pax_col:
+        passenger_count = st.selectbox(
+            "Passagers",
+            options=[1, 2, 3, 4, 5, 6, 7, 8],
+            key="passenger_count",
+            format_func=lambda n: f"{n}",
+        )
+
+pickup_lat = float(st.session_state.pickup_latitude)
+pickup_lon = float(st.session_state.pickup_longitude)
+dropoff_lat = float(st.session_state.dropoff_latitude)
+dropoff_lon = float(st.session_state.dropoff_longitude)
 
 with mid:
     render_clickable_route_map(pickup_lat, pickup_lon, dropoff_lat, dropoff_lon)
@@ -958,9 +1981,8 @@ with mid:
 with right:
     st.markdown(
         """
-        <div class="section-head">
+        <div class="section-head main-panel">
           <div class="section-title">Estimation</div>
-          <div class="section-sub">Prédiction API</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -974,9 +1996,6 @@ with right:
         dropoff_lat,
         passenger_count,
     )
-
-render_photo_scenes()
-
 
 # ============================================================
 # FOOTER
